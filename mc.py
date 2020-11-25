@@ -1,10 +1,8 @@
 from rev_modules import rw
-from rev_modules import parser
+import json
 import re
 
 def mcpy():
-	# test_code = ["say By Revon Zev", "as at @e[type=!player]:", "\tsay Hello World", "\tsay (c) Revon Zev",
-	# 			"\t\tas at @a:", "\t\tsay everyone", "say No one", "// This is a comment"]
 	raw_text = rw.read("test.mcpy")
 
 	text_lines = raw_text.split("\n")
@@ -31,15 +29,21 @@ def tabsReader(lines:list):
 
 def syntaxMatcher(lines:list):
 	regex = {"pattern": r"^as\sat\s.+:$", "command": "as {value} at @s", "replace": ["as at ", ":"], "execute": True}
+	converter_settings = json.loads(rw.read("./converter.json"))
 	# parent = {"tabs": 0, "value": "", "execute": False}
 	parent = {"execute": False, "tabs": 0, "tabs_value": [""]}
 	new_lines = []
 	command = ""
-	current_line = ""
+	execute_part = False
 	for line in lines:
 		# Non-Execute
+		for execute in converter_settings["execute"]:
+			regex2 = r"{}".format(execute["pattern"])
+			if re.match(regex2, line["value"]) != None:
+				execute_part = True
+			else:
+				execute_part = False
 
-		# Execute
 		if re.match(regex["pattern"], line["value"]) != None:
 			for i in regex["replace"]:
 				if i == ":":
@@ -48,6 +52,7 @@ def syntaxMatcher(lines:list):
 				line["value"] = line["value"].replace(i, "")
 			command = regex["command"].replace("{value}", line["value"])
 			parent["execute"] = True
+		# Execute
 			parent["tabs_value"].append(parent["tabs_value"][line["tabs"]] + " " + command)
 		elif re.match(r"(//|#) .+", line["value"]) != None:
 			continue

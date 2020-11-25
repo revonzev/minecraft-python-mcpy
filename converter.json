@@ -1,18 +1,16 @@
 {
-    "execute": {
-        "variations": [
-            {
-                "pattern": "^as\\sat\\s.+:$",
-                "command": "as {value} at @s",
-                "replace": ["as at ", ":"],
-                "execute": true
-            },
-            {
-                "pattern": "^as\\s.+:$",
-                "command": "as {value}",
-                "replace": ["as ", ":"],
-                "execute": true
-            }
-        ]
-    }
+    "execute": [
+        {
+            "pattern": "^as\\sat\\s.+:$",
+            "command": "as {value} at @s",
+            "replace": ["as at ", ":"],
+            "execute": true
+        },
+        {
+            "pattern": "as\\s[^(?!.*at)].+:",
+            "command": "as {value}",
+            "replace": ["as ", ":"],
+            "execute": true
+        }
+    ]
 }
