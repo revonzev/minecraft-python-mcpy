@@ -10,7 +10,8 @@ def mcpy():
 		raw_text = rw.read(mcpy_file)
 		text_lines = raw_text.split("\n")
 		tabbed_lines = tabsReader(text_lines)
-		decoded_lines = syntaxMatcher(tabbed_lines)
+		predecoded_lines = predecode(tabbed_lines)
+		decoded_lines = syntaxMatcher(predecoded_lines)
 
 		mcfunction_file = mcpy_file.replace(".mcpy", ".mcfunction")
 		rw.write("./{}".format(mcfunction_file), "\n".join(decoded_lines))
@@ -21,12 +22,18 @@ def tabsReader(lines:list):
 	for line in lines:
 		new_line = {"value": "", "tabs": 0}
 		line = line.split(user_settings["tab_style"])
+		empty_check = ""
 		for i in line:
 			if i == "":
+				empty_check += i
 				new_line["tabs"] += 1
 			else:
+				empty_check = i
 				new_line["value"] = i
 				break
+		if empty_check == "":
+			continue
+		
 		new_lines.append(new_line)
 	return new_lines
 
@@ -125,6 +132,36 @@ def syntaxMatcher(lines:list):
 			new_lines.append(new_line)
 
 	return new_lines
+
+
+def predecode(lines):
+	indent_check = 0
+	group = []
+	lines_group = [{}]
+	for i in range(0, len(lines)):
+		indent_check -= lines[i]["tabs"]
+		if indent_check < 0:
+			group += [lines[i]]
+		elif indent_check > 0:
+			group = []
+			group += [lines[i]]
+		else:
+			if re.match(r"^.+:$", lines[i]["value"]):
+				group = []
+				group += [lines[i]]
+			else:
+				group += [lines[i]]
+		indent_check = lines[i]["tabs"]
+		# lines_group += [group]
+		if lines_group[-1] != group:
+			lines_group += [group]
+	lines_group.pop(0)
+	# print(lines_group)
+	for line in lines_group:
+		print(line)
+		
+	return lines
+
 
 if __name__ == "__main__":
 	mcpy()
