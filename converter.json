@@ -1,4 +1,18 @@
 {
+    "variables": [
+        {
+            "pattern": "^var\\s.+$",
+            "command": "scoreboard objectives add {value}",
+            "replace": ["var "],
+            "kind": "declare"
+        },
+        {
+            "pattern": "^.+\\s.+\\s([+]=|-=|=)\\s\\d+$",
+            "command": "scoreboard players {operation} {target} {objective} {score}",
+            "replace": [""],
+            "kind": "set-add-remove"
+        }
+    ],
     "execute": [
         {
             "pattern": "^as\\sat\\s.+:$",
@@ -7,9 +21,21 @@
             "execute": true
         },
         {
-            "pattern": "as\\s[^(?!.*at)].+:",
+            "pattern": "^as\\s[^(?!.*at)].+:$",
             "command": "as {value}",
             "replace": ["as ", ":"],
+            "execute": true
+        },
+        {
+            "pattern": "^at\\s[^(?!.*as)].+:$",
+            "command": "at {value}",
+            "replace": ["at ", ":"],
+            "execute": true
+        },
+        {
+            "pattern": "^positioned\\s((.+)|(as))\\s.+:$",
+            "command": "positioned {value}",
+            "replace": ["positioned ", ":"],
             "execute": true
         }
     ]
