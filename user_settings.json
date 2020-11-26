@@ -2,5 +2,6 @@
     "files": [
         "test.mcpy"
     ],
-    "tab_style": "\t"
+    "tab_style": "\t",
+    "keep_comment_and_empty_line": false
 }

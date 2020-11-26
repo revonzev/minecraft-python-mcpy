@@ -52,28 +52,44 @@ positioned as @a:
 
 ### Defining
 ```
-var score dummy "Display"
+var my_score dummy "Display"
 
 # scoreboard objectives add score dummy "Display"
+# DO NOT DO: var score dummy "Display" = 10
 ```
 
 ### Set
 ```
-score @a = 10
+my_score @a = 10
 
-# scoreboard players set @a score 10
+# scoreboard players set @a my_score 10
 ```
 
 ### Add
 ```
-score @a += 1
+my_score @a += 1
 
-# scoreboard players add @a score 1
+# scoreboard players add @a my_score 1
 ```
 
 ### Remove
 ```
-score @a -= 1
+my_score @a -= 1
 
-# scoreboard players remove @a score 1
+# scoreboard players remove @a my_score 1
+```
+
+### Operation
+```
+my_score @a *= my_score @p
+
+# scoreboard players operation @a my_score *= @p my_score
+# Operations: %=, *=, +=, -=, /=, <, >, =, ><
+```
+
+### Store command result
+```
+my_score @a := say Hello
+
+execute store result score @a my_score run say Hello
 ```

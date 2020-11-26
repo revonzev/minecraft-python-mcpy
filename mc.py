@@ -32,7 +32,7 @@ def tabsReader(lines:list):
 
 
 def syntaxMatcher(lines:list):
-	parent = {"execute": False, "tabs": 0, "tabs_value": [""]}
+	parent = {"execute": False, "tabs": 0, "tabs_value": [""], "continue": False}
 	new_lines = []
 	new_line = ""
 	is_execute = [False]
@@ -59,6 +59,20 @@ def syntaxMatcher(lines:list):
 					line["value"] = line["value"].replace("{target}", temp[1])
 					line["value"] = line["value"].replace("{objective}", temp[0])
 					line["value"] = line["value"].replace("{score}", temp[3])
+				elif kind == "operation":
+					temp = line["value"].split(" ")
+					line["value"] = variable["command"].replace("{target_1}", temp[1])
+					line["value"] = line["value"].replace("{objective_1}", temp[0])
+					line["value"] = line["value"].replace("{operation}", temp[2])
+					line["value"] = line["value"].replace("{target_2}", temp[4])
+					line["value"] = line["value"].replace("{objective_2}", temp[3])
+				elif kind == "result":
+					temp = line["value"].split(" ", 2)
+					line["value"] = variable["command"].replace("{target}", temp[1])
+					line["value"] = line["value"].replace("{objective}", temp[0])
+					line["value"] = line["value"].replace("{command}", temp[2])
+					parent["execute"] = True
+					parent["continue"] = True
 
 		# Execute
 		for execute in converter_settings["execute"]:
@@ -90,12 +104,19 @@ def syntaxMatcher(lines:list):
 			parent["tabs_value"].append(parent["tabs_value"][line["tabs"]] + " " + new_line)
 
 		# Comment
-		elif re.match(r"((//|#) .+)|^$", line["value"]) != None:
+		elif re.match(r"((//|#) .+)|^$", line["value"]) != None and not user_settings["keep_comment_and_empty_line"]:
+			continue
+		elif re.match(r"((//|#) .+)|^$", line["value"]) != None and user_settings["keep_comment_and_empty_line"]:
+			new_lines.append(line["value"])
 			continue
 
 		else:
 			if parent["execute"] == True:
-				new_line = parent["tabs_value"][line["tabs"]] + " run " + line["value"]
+				if parent["continue"]:
+					new_line = parent["tabs_value"][line["tabs"]] + " " + line["value"]
+					parent["continue"] = False
+				else:
+					new_line = parent["tabs_value"][line["tabs"]] + " run " + line["value"]
 				if re.match(r"execute", new_line) == None:
 					new_line = "execute" + new_line
 			else:
