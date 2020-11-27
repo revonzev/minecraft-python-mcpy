@@ -1,4 +1,5 @@
 from rev_modules import rw
+from copy import deepcopy
 import json
 import re
 
@@ -108,7 +109,7 @@ def syntaxMatcher(lines:list):
 			new_line = is_execute[1]["command"].replace("{value}", line["value"])
 			# Set parent
 			parent["execute"] = True
-			parent["tabs_value"].append(parent["tabs_value"][line["tabs"]] + " " + new_line)
+			parent["tabs_value"].append(parent["tabs_value"][line["tabs"]-1] + " " + new_line)
 
 		# Comment
 		elif re.match(r"((//|#) .+)|^$", line["value"]) != None and not user_settings["keep_comment_and_empty_line"]:
@@ -135,7 +136,9 @@ def syntaxMatcher(lines:list):
 
 
 def predecode(lines):
+	# Group line based on parent and indent
 	indent_check = 0
+	new_lines = []
 	group = []
 	lines_group = [{}]
 	for i in range(0, len(lines)):
@@ -152,15 +155,68 @@ def predecode(lines):
 			else:
 				group += [lines[i]]
 		indent_check = lines[i]["tabs"]
-		# lines_group += [group]
+
 		if lines_group[-1] != group:
 			lines_group += [group]
 	lines_group.pop(0)
-	# print(lines_group)
-	for line in lines_group:
-		print(line)
-		
-	return lines
+
+	new_lines_group = []
+	for line_group in lines_group:
+		values_only = []
+		tabs_only = 0
+		if len(line_group) > 1:
+			tabs_only = line_group[1]["tabs"]
+		else:
+			tabs_only = line_group[0]["tabs"]
+		for line in line_group:
+			values_only += [line["value"]]
+		new_lines_group += [{"tabs": tabs_only,"values": values_only}]
+	lines_group = new_lines_group
+	
+	# Predecoder
+	for i in range(0, len(lines_group)):
+		# Mcpy else
+		if lines_group[i]["values"][0] == "else:":
+			line_num = i-1
+			while line_num > 0:
+				if re.match(r"^(if|unless)\s.+:$", lines_group[line_num]["values"][0]) != None:
+					if lines_group[line_num]["tabs"] == lines_group[i]["tabs"]:
+						lines_group[i]["values"][0] = else_special(lines_group[line_num]["values"][0])
+						break
+				line_num -= 1
+		# Mcpy multiple match
+		if re.match(r"^if.+\[\d+(, \d)*, \d\]:$", lines_group[i]["values"][0]) != None:
+			# Split
+			data_full = re.split(r"\[|, |]", lines_group[i]["values"][0])
+			data = deepcopy(data_full)[1:-1]
+			new_line = ""
+			new_lines_group = deepcopy(lines_group)
+			new_lines_group.pop(i)
+			for ia in range(0, len(data)):
+				new_line = "".join(data_full)
+				new_line = new_line.replace("".join(data), "{value}")
+				new_line = new_line.replace("{value}", data[ia])
+				new_lines_group.insert(i, deepcopy(lines_group[i]))
+				new_lines_group[i]["values"][0] = new_line
+			lines_group = new_lines_group
+
+	# Ungrouper
+	new_lines = []
+	for group in lines_group:
+		for value in group["values"]:
+			if re.match(r"^.+:$", value) != None:
+				new_lines += [{"tabs": group["tabs"]-1, "value": value}]
+			else:
+				new_lines += [{"tabs": group["tabs"], "value": value}]
+
+	return new_lines
+
+
+def else_special(s):
+	s = s.replace("if", "lyayk")
+	s = s.replace("unless", "if")
+	s = s.replace("lyayk", "if")
+	return s
 
 
 if __name__ == "__main__":
