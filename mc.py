@@ -91,7 +91,6 @@ def syntaxMatcher(lines:list):
 			else:
 				is_execute = [False, execute]
 		
-		# Is not execute children
 		if (len(parent["tabs_value"])-1) > line["tabs"]:
 			parent["execute"] = False
 			parent["tabs_value"] = parent["tabs_value"][:line["tabs"]+1]
@@ -109,7 +108,7 @@ def syntaxMatcher(lines:list):
 			new_line = is_execute[1]["command"].replace("{value}", line["value"])
 			# Set parent
 			parent["execute"] = True
-			parent["tabs_value"].append(parent["tabs_value"][line["tabs"]-1] + " " + new_line)
+			parent["tabs_value"].append(parent["tabs_value"][line["tabs"]] + " " + new_line)
 
 		# Comment
 		elif re.match(r"((//|#) .+)|^$", line["value"]) != None and not user_settings["keep_comment_and_empty_line"]:

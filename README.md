@@ -48,6 +48,13 @@ positioned as @a:
 # execute positioned as @a run say Hello World
 ```
 
+The rest of the execute chain is the same as minecraft, but with a ":" at the end
+```
+in overworld:
+    if block ~ ~ ~ fire:
+        say Your burn is in a whole other dimensions
+```
+
 ## Variables
 
 ### Defining
