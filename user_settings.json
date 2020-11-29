@@ -1,9 +1,10 @@
 {
+    "individual_file": false,
     "files": [
-        "test2.mcpy"
+        "my_files.mcpy"
     ],
     "dist": "./dist/",
-    "base": "./tests/",
+    "base": "./",
     "tab_style": "\t",
     "keep_comment": true,
     "obfuscate": false,

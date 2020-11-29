@@ -8,6 +8,7 @@ An mcfunction compiler by using Python.
 # This is a comment
 // This is also a comment
 ```
+*Note: Put a comment in it's own line*
 
 ### As At
 ```
@@ -112,22 +113,25 @@ In the user_settings.json if `"obfuscate": true` then instead of the variable na
 
 If `"obfuscate": false` you are limited in naming your variables to 16 characters (Minecraft's scoreboard objective name limit).
 
-### Tags or Strings
+### Tags or strings
 To obfuscate a tag or string use 
 ```
-# obf tag_name
+obf tag_name
 ```
-These obf comments will be removed regardless of keep_comment in user_settings
 
 *Note: Any string that matches it will be obfuscated*
 
-## Dist path
+## User Settings
+### Dist path
 The default is `./dist`. It is in the `user_settings.json`.. Dist location is in local. That means it cannot do `C:/Users/user/Documents/project/mcpy/dist` but instead `./dist`.
 
-## Tabbing Style
+### Tabbing style
 The default is `\t`. It is in the `user_settings.json`. Do use the proper tabbing otherwise the compiler will not compile mcpy to mcfunction correctly.
 
-## Project base path
+### Project base path
 The default is `./` (Where the mc.exe is). It is in the `user_settings.json`. Any files that's inside a folder inside the project base will be generated in the dist path.
+
+### Individual files
+The default is `false`. If you wish to set the files manualy, it is in the `user_settings.json`, set `"individual_file"` to `true`. Then add the files inside `"files"`. If `"individual_file": false` then it will compile all the files inside the project base path.
 
 © 2020 Revon Zev

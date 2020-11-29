@@ -1,6 +1,7 @@
 from json import loads, dumps
 from re import match, split, sub
-from os import mkdir, path
+from os import mkdir, path, listdir
+from shutil import rmtree
 from copy import deepcopy
 from random import SystemRandom
 from string import ascii_letters, digits
@@ -9,10 +10,21 @@ converter = {}
 user_settings = {}
 obfuscated_str = {}
 used_obfuscated_str = {}
+files_path = []
 
 def mcpy():
-	for file in user_settings['files']:
-		raw_text = readFile(user_settings['base']+file)
+	global files_path
+
+	deleteDist()
+
+	if user_settings['individual_file']:
+		for i in user_settings['files']:
+			files_path += [user_settings['base']+i]
+	else:
+		files_path = getFiles(user_settings['base'])
+
+	for file in files_path:
+		raw_text = readFile(file)
 		text_lines = raw_text.split('\n')
 
 		# Process
@@ -38,6 +50,7 @@ def postcompiler(lines:list):
 	for i in range(0, len(lines)):
 		if match(r'^#.+$', lines[i]) and not user_settings['keep_comment']:
 			continue
+		# Skip empty lines
 		elif lines[i] == '':
 			continue
 		else:
@@ -50,7 +63,7 @@ def obfuscate_lines(lines:list):
 	obfuscated_str_keys = list(obfuscated_str.keys())
 	new_lines = []
 	for i in range(0, len(lines)):
-		# Obfuscate scoreboard name
+		# Obfuscate strings
 		for ia in range(0, len(obfuscated_str)):
 			lines[i] = lines[i].replace(obfuscated_str_keys[ia], obfuscated_str[obfuscated_str_keys[ia]])
 		
@@ -175,17 +188,15 @@ def precompiler(lines:list):
 	for i in range(0, len(lines)):
 		if lines[i]['value'] == 'else:':
 			lines[i]['value'] = mcpyElse(lines[:i+1])
-		elif match(r'^(if|unless).+matches\s\[\d+(,\s\d+)*,\s\d+\]:$', lines[i]['value']):
-			multi_ifs = mcpyMultiIfMatch(lines[i:])
+		elif match(r'^(if|unless).+matches\s\[.+(,\s.+)*,\s.+\]:$', lines[i]['value']):
+			multi_ifs = mcpyMultiIfMatches(lines[i:])
 			# Remove original child
 			for ia in range(0, multi_ifs[0]+1):
 				lines.pop(i)
 			multi_ifs.pop(0)
 			# Insert the ifs
 			for an_if in reversed(multi_ifs):
-				# print(an_if['tabs'], an_if['value'])
 				lines.insert(i, deepcopy(an_if))
-			# for iz in multi_ifs: print(iz['tabs'], iz['value'])
 			# Continue but with the new lines
 			precompiled_lines = precompiler(lines)
 			return precompiled_lines
@@ -193,7 +204,7 @@ def precompiler(lines:list):
 	return lines
 
 
-def mcpyMultiIfMatch(lines:list):
+def mcpyMultiIfMatches(lines:list):
 	data = split(r'\[|, |]', lines[0]['value'])[1:-1]
 	lines[0]['value'] = lines[0]['value'].replace(',', '')
 	lines[0]['value'] = lines[0]['value'].replace('[', '')
@@ -201,7 +212,7 @@ def mcpyMultiIfMatch(lines:list):
 	lines_child = []
 	multi_ifs = []
 
-	# Find the child of the multi if match
+	# Find the child of the multi if matches
 	for i in range(0, len(lines)):
 		# Skip first line (the 'if ... match ... []')
 		if lines[i]['value'] == lines[0]['value']:
@@ -283,7 +294,9 @@ def readFile(path:str):
 
 def writeFile(path:str, data:str, dist=True):
 	if dist == True:
-		path = path.replace('./', user_settings['dist'])
+		path = path.replace(user_settings['base'], '')
+		path = path.replace('./', '')
+		path = ''.join(user_settings['dist']+path)
 	elif user_settings['base'] != './':
 		path = path.replace(user_settings['base'], './')
 	generatePath(path)
@@ -301,6 +314,27 @@ def generatePath(f_path:str):
 			current_path += i + '/'
 			if not path.exists(current_path):
 				mkdir(current_path)
+
+
+# From https://appdividend.com/2020/01/20/python-list-of-files-in-directory-and-subdirectories/
+def getFiles(dirName):
+    listOfFile = listdir(dirName)
+    completeFileList = list()
+    for file in listOfFile:
+        completePath = path.join(dirName, file)
+        if path.isdir(completePath):
+            completeFileList = completeFileList + getFiles(completePath)
+        else:
+            completeFileList.append(completePath)
+
+    return completeFileList
+
+
+def deleteDist():
+	try:
+		rmtree(user_settings['dist'])
+	except FileNotFoundError:
+		return
 
 
 if __name__ == '__main__':
