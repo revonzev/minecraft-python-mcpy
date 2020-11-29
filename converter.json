@@ -1,4 +1,5 @@
 {
+    "_comment": "DO NOT CHANGE ANYTHING",
     "variables": [
         {
             "pattern": "^var\\s.+$",
@@ -23,9 +24,15 @@
             "command": "store result score {target} {objective} run {command}",
             "replace": [":= "],
             "kind": "result"
+        },
+        {
+            "pattern": "^obf\\s.+$",
+            "command": "",
+            "replace": [""],
+            "kind": "declare"
         }
     ],
-    "execute": [
+    "executes": [
         {
             "pattern": "^as\\sat\\s.+:$",
             "command": "as {value} at @s",
@@ -48,6 +55,12 @@
             "pattern": "^(if|unless|align|anchored|facing|in|positioned|rotated)\\s.+:$",
             "command": "{value}",
             "replace": [":"],
+            "execute": true
+        },
+        {
+            "pattern": "^.+\\s.+\\s:=\\s.+$",
+            "command": "store result score {target} {objective} run {command}",
+            "replace": [":= "],
             "execute": true
         }
     ]

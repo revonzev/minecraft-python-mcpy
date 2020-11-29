@@ -1,7 +1,11 @@
 {
     "files": [
-        "test.mcpy"
+        "test2.mcpy"
     ],
+    "dist": "./dist/",
+    "base": "./tests/",
     "tab_style": "\t",
-    "keep_comment_and_empty_line": false
+    "keep_comment": true,
+    "obfuscate": false,
+    "keep_unused_obfuscated_string": false
 }
