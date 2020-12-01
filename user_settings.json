@@ -5,7 +5,7 @@
     ],
     "dist": "./dist/",
     "base": "./",
-    "tab_style": "\t",
+    "tab_style": "    ",
     "keep_comment": true,
     "obfuscate": false,
     "keep_unused_obfuscated_string": false

@@ -126,7 +126,7 @@ obf tag_name
 The default is `./dist`. It is in the `user_settings.json`.. Dist location is in local. That means it cannot do `C:/Users/user/Documents/project/mcpy/dist` but instead `./dist`.
 
 ### Tabbing style
-The default is `\t`. It is in the `user_settings.json`. Do use the proper tabbing otherwise the compiler will not compile mcpy to mcfunction correctly.
+The default is four spaces. It is in the `user_settings.json`. Do use the proper tabbing otherwise the compiler will not compile mcpy to mcfunction correctly.
 
 ### Project base path
 The default is `./` (Where the mc.exe is). It is in the `user_settings.json`. Any files that's inside a folder inside the project base will be generated in the dist path.
