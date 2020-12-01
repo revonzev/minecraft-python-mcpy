@@ -463,6 +463,8 @@ def generateUserSettings():
 
 
 if __name__ == '__main__':
+    logger.info('mcpy version 1.3.5')
+
     try:
         user_settings = json.loads(readFile('./user_settings.json'))
     except FileNotFoundError:
