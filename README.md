@@ -64,7 +64,7 @@ in nether:
 
 ### Defining
 ```
-var my_score dummy "Display"
+score name dummy "Display"
 
 # scoreboard objectives add score dummy "Display"
 # DO NOT DO: var score dummy "Display" = 10
@@ -72,38 +72,38 @@ var my_score dummy "Display"
 
 ### Set
 ```
-my_score @a = 10
+home @a = 10
 
-# scoreboard players set @a my_score 10
+# scoreboard players set @a home 10
 ```
 
 ### Add
 ```
-my_score @a += 1
+home @a += 1
 
-# scoreboard players add @a my_score 1
+# scoreboard players add @a home 1
 ```
 
 ### Remove
 ```
-my_score @a -= 1
+home @a -= 1
 
-# scoreboard players remove @a my_score 1
+# scoreboard players remove @a home 1
 ```
 
 ### Operation
 ```
-my_score @a *= my_score @p
+home @a *= home @p
 
-# scoreboard players operation @a my_score *= @p my_score
+# scoreboard players operation @a home *= @p home
 # Operations: %=, *=, +=, -=, /=, <, >, =, ><
 ```
 
 ### Store command result
 ```
-my_score @a := say Hello
+home @a := say Hello
 
-# execute store result score @a my_score run say Hello
+# execute store result score @a home run say Hello
 ```
 
 ## Obfuscation

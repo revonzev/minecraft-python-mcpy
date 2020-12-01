@@ -11,9 +11,9 @@ from loguru import logger
 converter = {
     "variables": [
         {
-            "pattern": "^var\s.+$",
+            "pattern": "^score\s.+$",
             "command": "scoreboard objectives add {value}",
-            "replace": ["var "],
+            "replace": ["score "],
             "kind": "declare"
         },
         {
@@ -463,7 +463,7 @@ def generateUserSettings():
 
 
 if __name__ == '__main__':
-    logger.info('mcpy version 1.3.5')
+    logger.info('mcpy version 1.4')
 
     try:
         user_settings = json.loads(readFile('./user_settings.json'))
