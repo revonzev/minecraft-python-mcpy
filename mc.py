@@ -106,12 +106,11 @@ def writeOutputFiles(lines:list, f_path:str):
 
     # Write obfuscation data
     if user_settings['keep_unused_obfuscated_string'] or not user_settings['obfuscate']:
-        f_to_w = './obfuscated_data.json'
         text_to_w = json.dumps(obfuscated_str)
     else:
-        f_to_w = './unused_obfuscated_data.json'
         text_to_w = json.dumps(used_obfuscated_str)
     if user_settings['obfuscate']:
+        f_to_w = './obfuscated_data.json'
         writeFile('./'+f_to_w, text_to_w, False)
 
 
