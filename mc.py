@@ -353,9 +353,32 @@ def deleteDist():
         return
 
 
+def generateUserSettings():
+    global user_settings
+    user_settings = {
+        "individual_file": False,
+        "files": [
+            "my_files.mcpy"
+        ],
+        "dist": "./dist/",
+        "base": "./tests/",
+        "tab_style": "    ",
+        "keep_comment": True,
+        "obfuscate": False,
+        "keep_unused_obfuscated_string": False
+    }
+
+    writeFile('./user_settings.json', json.dumps(user_settings, indent=4), False)
+
+
 if __name__ == '__main__':
     converter = json.loads(readFile('./converter.json'))
-    user_settings = json.loads(readFile('./user_settings.json'))
+
+    try:
+        user_settings = json.loads(readFile('./user_settings.json'))
+    except FileNotFoundError:
+        generateUserSettings()
+
     try:
         obfuscated_str = json.loads(readFile('./obfuscated_data.json'))
     except FileNotFoundError:

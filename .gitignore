@@ -5,3 +5,4 @@ build
 dist
 *.spec
 obfuscated_data.json
+user_settings.json
