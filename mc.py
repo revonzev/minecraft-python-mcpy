@@ -92,7 +92,7 @@ def main():
         precompiled_lines = precompiler(tabbed_lines)
         compiled_lines = compiler(precompiled_lines)
         postcompiled_lines = postcompiler(compiled_lines)
-        
+
         writeOutputFiles(postcompiled_lines, f_path)
 
 
@@ -111,8 +111,8 @@ def writeOutputFiles(lines:list, f_path:str):
     else:
         f_to_w = './unused_obfuscated_data.json'
         text_to_w = json.dumps(used_obfuscated_str)
-
-    writeFile('./'+f_to_w, text_to_w, False)
+    if user_settings['obfuscate']:
+        writeFile('./'+f_to_w, text_to_w, False)
 
 
 def individualFileOrGroup():
@@ -431,8 +431,8 @@ def checkLastModified():
         for f_path in files_path:
             files_newly_modified += [os.stat(f_path).st_mtime]
         files_last_modified = files_newly_modified
-    
-    return files_last_modified == files_newly_modified
+
+    return files_last_modified != files_newly_modified
 
 
 def generateUserSettings():
@@ -459,7 +459,7 @@ if __name__ == '__main__':
         user_settings = json.loads(readFile('./user_settings.json'))
     except FileNotFoundError:
         generateUserSettings()
-
+        
     try:
         obfuscated_str = json.loads(readFile('./obfuscated_data.json'))
     except FileNotFoundError:
