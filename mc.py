@@ -6,6 +6,7 @@ import copy
 import random
 import string
 import time
+from loguru import logger
 
 converter = {
     "variables": [
@@ -84,6 +85,7 @@ def main():
     deleteDist()
 
     for f_path in files_path:
+        logger.info('compiling {}', f_path.replace('\\', '/'))
         raw_text = readFile(f_path)
         text_lines = raw_text.split('\n')
 
@@ -100,7 +102,6 @@ def writeOutputFiles(lines:list, f_path:str):
     # Write .mcfunction
     f_to_w = f_path.replace('.mcpy', '.mcfunction')
     text_to_w = '\n'.join(lines)
-    writeFile('./'+f_to_w, text_to_w)
     
     writeFile(f_to_w, text_to_w)
 
@@ -109,9 +110,10 @@ def writeOutputFiles(lines:list, f_path:str):
         text_to_w = json.dumps(obfuscated_str)
     else:
         text_to_w = json.dumps(used_obfuscated_str)
+
     if user_settings['obfuscate']:
         f_to_w = './obfuscated_data.json'
-        writeFile('./'+f_to_w, text_to_w, False)
+        writeFile(f_to_w, text_to_w, False)
 
 
 def individualFileOrGroup():
@@ -381,7 +383,10 @@ def writeFile(f_path:str, data:str, dist=True):
         f_path = ''.join(user_settings['dist']+f_path)
     elif user_settings['base'] != './':
         f_path = f_path.replace(user_settings['base'], './')
+
     generatePath(f_path)
+
+    logger.info('writing {}', f_path.replace('\\', '/'))
     with open(f_path, 'w') as file:
         file.write(data)
 
@@ -415,23 +420,27 @@ def deleteDist():
     try:
         shutil.rmtree(user_settings['dist'])
     except FileNotFoundError:
+        logger.error('Project base not found {}', user_settings['dist'])
         return
 
 
 def checkLastModified():
     global files_last_modified
     files_newly_modified = []
+    hasModified = False
 
     if files_last_modified == []:
         for f_path in files_path:
             files_last_modified  += [os.stat(f_path).st_mtime]
-        return True
+        hasModified = True
     else:
         for f_path in files_path:
             files_newly_modified += [os.stat(f_path).st_mtime]
+        
+        hasModified = files_last_modified != files_newly_modified
         files_last_modified = files_newly_modified
 
-    return files_last_modified != files_newly_modified
+    return hasModified
 
 
 def generateUserSettings():
@@ -457,6 +466,8 @@ if __name__ == '__main__':
     try:
         user_settings = json.loads(readFile('./user_settings.json'))
     except FileNotFoundError:
+        logger.error('./user_settings.json not found')
+        logger.info('generate new ./user_settings.json')
         generateUserSettings()
         
     try:
@@ -466,8 +477,12 @@ if __name__ == '__main__':
 
     while True:
         individualFileOrGroup()
+
         if checkLastModified():
+            logger.info('compiling...')
             main()
+            logger.info('finished compiling')
+
         if user_settings['watch_delay'] == 0:
             input('continue? (Enter)')
         else:
