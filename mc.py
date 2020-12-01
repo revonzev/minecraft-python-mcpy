@@ -6,7 +6,73 @@ import copy
 import random
 import string
 
-converter = {}
+converter = {
+    "variables": [
+        {
+            "pattern": "^var\s.+$",
+            "command": "scoreboard objectives add {value}",
+            "replace": ["var "],
+            "kind": "declare"
+        },
+        {
+            "pattern": "^.+\s.+\s([+]=|-=|=)\s\d+$",
+            "command": "scoreboard players {operation} {target} {objective} {score}",
+            "replace": [""],
+            "kind": "set-add-remove"
+        },
+        {
+            "pattern": "^.+\s.+\s(((%|[*]|[+]|-|\/)=)|(=|<|>|><))\s.+\s.+$",
+            "command": "scoreboard players operation {target_1} {objective_1} {operation} {target_2} {objective_2}",
+            "replace": [""],
+            "kind": "operation"
+        },
+        {
+            "pattern": "^.+\s.+\s:=\s.+$",
+            "command": "store result score {target} {objective} run {command}",
+            "replace": [":= "],
+            "kind": "result"
+        },
+        {
+            "pattern": "^obf\s.+$",
+            "command": "",
+            "replace": [""],
+            "kind": "declare"
+        }
+    ],
+    "executes": [
+        {
+            "pattern": "^as\sat\s.+:$",
+            "command": "as {value} at @s",
+            "replace": ["as at ", ":"],
+            "execute": True
+        },
+        {
+            "pattern": "^as\s[^(?!.*at)].+:$",
+            "command": "as {value}",
+            "replace": ["as ", ":"],
+            "execute": True
+        },
+        {
+            "pattern": "^at\s[^(?!.*as)].+:$",
+            "command": "at {value}",
+            "replace": ["at ", ":"],
+            "execute": True
+        },
+        {
+            "pattern": "^(if|unless|align|anchored|facing|in|positioned|rotated)\s.+:$",
+            "command": "{value}",
+            "replace": [":"],
+            "execute": True
+        },
+        {
+            "pattern": "^.+\s.+\s:=\s.+$",
+            "command": "store result score {target} {objective} run {command}",
+            "replace": [":= "],
+            "execute": True
+        }
+    ]
+}
+
 user_settings = {}
 obfuscated_str = {}
 used_obfuscated_str = {}
@@ -372,8 +438,6 @@ def generateUserSettings():
 
 
 if __name__ == '__main__':
-    converter = json.loads(readFile('./converter.json'))
-
     try:
         user_settings = json.loads(readFile('./user_settings.json'))
     except FileNotFoundError:
