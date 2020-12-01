@@ -340,7 +340,7 @@ def getFiles(dirPath):
         completePath = os.path.join(dirPath, file)
         if os.path.isdir(completePath):
             completeFileList += getFiles(completePath)
-        else:
+        elif completePath.endswith('.mcpy'):
             completeFileList.append(completePath)
 
     return completeFileList
@@ -361,7 +361,7 @@ def generateUserSettings():
             "my_files.mcpy"
         ],
         "dist": "./dist/",
-        "base": "./tests/",
+        "base": "./",
         "tab_style": "    ",
         "keep_comment": True,
         "obfuscate": False,
