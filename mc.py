@@ -5,6 +5,7 @@ import shutil
 import copy
 import random
 import string
+import time
 
 converter = {
     "variables": [
@@ -77,11 +78,10 @@ user_settings = {}
 obfuscated_str = {}
 used_obfuscated_str = {}
 files_path = []
+files_last_modified = []
 
 def main():
     deleteDist()
-
-    individualFileOrGroup()
 
     for f_path in files_path:
         raw_text = readFile(f_path)
@@ -419,9 +419,26 @@ def deleteDist():
         return
 
 
+def checkLastModified():
+    global files_last_modified
+    files_newly_modified = []
+
+    if files_last_modified == []:
+        for f_path in files_path:
+            files_last_modified  += [os.stat(f_path).st_mtime]
+        return True
+    else:
+        for f_path in files_path:
+            files_newly_modified += [os.stat(f_path).st_mtime]
+        files_last_modified = files_newly_modified
+    
+    return files_last_modified == files_newly_modified
+
+
 def generateUserSettings():
     global user_settings
     user_settings = {
+        "watch_delay": 5,
         "individual_file": False,
         "files": [
             "my_files.mcpy"
@@ -447,4 +464,12 @@ if __name__ == '__main__':
         obfuscated_str = json.loads(readFile('./obfuscated_data.json'))
     except FileNotFoundError:
         pass
-    main()
+
+    while True:
+        individualFileOrGroup()
+        if checkLastModified():
+            main()
+        if user_settings['watch_delay'] == 0:
+            input('continue? (Enter)')
+        else:
+            time.sleep(user_settings['watch_delay'])

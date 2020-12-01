@@ -122,16 +122,21 @@ obf tag_name
 *Note: Any string that matches it will be obfuscated*
 
 ## User Settings
+The file is `user_settings.json`
+
+### Watch delay
+The default is every 5 seconds. How much delay before it checks if a file has been updated and compile. If set to 0, then it is on manual.
+
 ### Dist path
-The default is `./dist`. It is in the `user_settings.json`.. Dist location is in local. That means it cannot do `C:/Users/user/Documents/project/mcpy/dist` but instead `./dist`.
+The default is `./dist`. Dist location is in local. That means it cannot do `C:/Users/user/Documents/project/mcpy/dist` but instead `./dist`.
 
 ### Tabbing style
-The default is four spaces. It is in the `user_settings.json`. Do use the proper tabbing otherwise the compiler will not compile mcpy to mcfunction correctly.
+The default is four spaces. Do use the proper tabbing otherwise the compiler will not compile mcpy to mcfunction correctly.
 
 ### Project base path
-The default is `./` (Where the mc.exe is). It is in the `user_settings.json`. Any files that's inside a folder inside the project base will be generated in the dist path.
+The default is `./` (Where the mc.exe is). Any files that's inside a folder inside the project base will be generated in the dist path.
 
 ### Individual files
-The default is `false`. If you wish to set the files manualy, it is in the `user_settings.json`, set `"individual_file"` to `true`. Then add the files inside `"files"`. If `"individual_file": false` then it will compile all the files inside the project base path.
+The default is `false`. If you wish to set the files manualy, set `"individual_file"` to `true`. Then add the files inside `"files"` list. If `"individual_file": false` then it will compile all the files inside the project base path.
 
 © 2020 Revon Zev
