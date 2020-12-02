@@ -31,7 +31,7 @@ converter = {
         {
             "pattern": "^.+\s.+\s:=\s.+$",
             "command": "store result score {target} {objective} run {command}",
-            "replace": [":= "],
+            "replace": [":=\s"],
             "kind": "result"
         },
         {
@@ -45,31 +45,31 @@ converter = {
         {
             "pattern": "^as\sat\s.+:$",
             "command": "as {value} at @s",
-            "replace": ["as at ", ":"],
+            "replace": ["^as\sat\s", ":$"],
             "execute": True
         },
         {
             "pattern": "^as\s[^(?!.*at)].+:$",
             "command": "as {value}",
-            "replace": ["as ", ":"],
+            "replace": ["^as\s", ":$"],
             "execute": True
         },
         {
             "pattern": "^at\s[^(?!.*as)].+:$",
             "command": "at {value}",
-            "replace": ["at ", ":"],
+            "replace": ["^at\s", ":$"],
             "execute": True
         },
         {
             "pattern": "^(if|unless|align|anchored|facing|in|positioned|rotated)\s.+:$",
             "command": "{value}",
-            "replace": [":"],
+            "replace": [":$"],
             "execute": True
         },
         {
             "pattern": "^.+\s.+\s:=\s.+$",
             "command": "store result score {target} {objective} run {command}",
-            "replace": [":= "],
+            "replace": [":=\s"],
             "execute": True
         }
     ]
