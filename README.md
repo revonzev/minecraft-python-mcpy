@@ -64,7 +64,7 @@ in nether:
 
 ### Defining
 ```
-var my_score dummy "Display"
+score name dummy "Display"
 
 # scoreboard objectives add score dummy "Display"
 # DO NOT DO: var score dummy "Display" = 10
@@ -72,38 +72,38 @@ var my_score dummy "Display"
 
 ### Set
 ```
-my_score @a = 10
+home @a = 10
 
-# scoreboard players set @a my_score 10
+# scoreboard players set @a home 10
 ```
 
 ### Add
 ```
-my_score @a += 1
+home @a += 1
 
-# scoreboard players add @a my_score 1
+# scoreboard players add @a home 1
 ```
 
 ### Remove
 ```
-my_score @a -= 1
+home @a -= 1
 
-# scoreboard players remove @a my_score 1
+# scoreboard players remove @a home 1
 ```
 
 ### Operation
 ```
-my_score @a *= my_score @p
+home @a *= home @p
 
-# scoreboard players operation @a my_score *= @p my_score
+# scoreboard players operation @a home *= @p home
 # Operations: %=, *=, +=, -=, /=, <, >, =, ><
 ```
 
 ### Store command result
 ```
-my_score @a := say Hello
+home @a := say Hello
 
-# execute store result score @a my_score run say Hello
+# execute store result score @a home run say Hello
 ```
 
 ## Obfuscation
@@ -122,16 +122,21 @@ obf tag_name
 *Note: Any string that matches it will be obfuscated*
 
 ## User Settings
+The file is `user_settings.json`
+
+### Watch delay
+The default is every 5 seconds. How much delay before it checks if a file has been updated and compile. If set to 0, then it is on manual.
+
 ### Dist path
-The default is `./dist`. It is in the `user_settings.json`.. Dist location is in local. That means it cannot do `C:/Users/user/Documents/project/mcpy/dist` but instead `./dist`.
+The default is `./dist`. Dist location is in local. That means it cannot do `C:/Users/user/Documents/project/mcpy/dist` but instead `./dist`.
 
 ### Tabbing style
-The default is `\t`. It is in the `user_settings.json`. Do use the proper tabbing otherwise the compiler will not compile mcpy to mcfunction correctly.
+The default is four spaces. Do use the proper tabbing otherwise the compiler will not compile mcpy to mcfunction correctly.
 
 ### Project base path
-The default is `./` (Where the mc.exe is). It is in the `user_settings.json`. Any files that's inside a folder inside the project base will be generated in the dist path.
+The default is `./` (Where the mc.exe is). Any files that's inside a folder inside the project base will be generated in the dist path.
 
 ### Individual files
-The default is `false`. If you wish to set the files manualy, it is in the `user_settings.json`, set `"individual_file"` to `true`. Then add the files inside `"files"`. If `"individual_file": false` then it will compile all the files inside the project base path.
+The default is `false`. If you wish to set the files manualy, set `"individual_file"` to `true`. Then add the files inside `"files"` list. If `"individual_file": false` then it will compile all the files inside the project base path.
 
 © 2020 Revon Zev
