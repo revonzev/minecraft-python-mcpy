@@ -13,7 +13,7 @@ converter = {
         {
             "pattern": "^score\s.+$",
             "command": "scoreboard objectives add {value}",
-            "replace": ["score "],
+            "replace": ["^score\s"],
             "kind": "declare"
         },
         {
@@ -181,7 +181,7 @@ def mcpyExecute(lines:list):
                     if ia == ':':
                         lines[i]['value'] = lines[i]['value'][:-1]
                     else:
-                        lines[i]['value'] = lines[i]['value'].replace(ia, '')
+                        lines[i]['value'] = re.sub(ia, '', lines[i]['value'])
                 # Compile the Mcpy execute line to Minecraft's
                 lines[i]['value'] = execute['command'].format(value=lines[i]['value'])
         
@@ -229,7 +229,7 @@ def mcpyVars(line:str):
             temp = line['value'].split(' ')
 
             for i in variable['replace']:
-                line['value'] = line['value'].replace(i, '')
+                line['value'] = re.sub(i, '', line['value'])
             
             # Define scoreboard and tags
             if variable['kind'] == 'declare':
@@ -291,9 +291,7 @@ def precompiler(lines:list):
 
 def mcpyMultiIfMatches(lines:list):
     data = re.split(r'\[|, |]', lines[0]['value'])[1:-1]
-    lines[0]['value'] = lines[0]['value'].replace(',', '')
-    lines[0]['value'] = lines[0]['value'].replace('[', '')
-    lines[0]['value'] = lines[0]['value'].replace(']', '')
+    lines[0]['value'] = re.sub(r',|\[|\]', '',lines[0]['value'])
     lines_child = []
     multi_ifs = []
 
