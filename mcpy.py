@@ -11,6 +11,12 @@ from loguru import logger
 converter = {
     "variables": [
         {
+            "pattern": "^var\s.+$",
+            "command": "",
+            "replace": ["^var\s"],
+            "kind": "declare-user-var"
+        },
+        {
             "pattern": "^score\s.+$",
             "command": "scoreboard objectives add {value}",
             "replace": ["^score\s"],
@@ -75,6 +81,7 @@ converter = {
     ]
 }
 
+user_vars = {}
 user_settings = {}
 obfuscated_str = {}
 used_obfuscated_str = {}
@@ -246,6 +253,30 @@ def mcpyVars(line:str):
                     line['value'] = re.sub(r'(\"|\').+(\"|\')', '""', line['value'])
                 line['value'] = variable['command'].format(value=line['value'])
             
+            elif variable['kind'] == 'declare-user-var':
+                #logger.debug(line)
+                try:
+                    # Int
+                    user_vars[temp[1]] = int(temp[3])
+                except ValueError:
+                    # List
+                    if re.match(r'^.+\[.+\]$', line['value']):
+                        temp[3] = re.sub(r'^.+\[|\"|\'|\]$', '', line['value'])
+                        user_vars[temp[1]] = re.split(r',\s', temp[3])
+                    # Dict
+                    if re.match(r'^.+{.+}$', line['value']):
+                        temp[3] = re.sub(r'^.+{', '{', line['value'])
+                        user_vars[temp[1]] = json.loads(temp[3])
+                    # String
+                    else:
+                        temp[3] = re.sub(r'^(.+\s=\s)(\'|\")', '', line['value'])
+                        temp[3] = re.sub(r'(\'|\")$', '', temp[3])
+                        user_vars[temp[1]] = temp[3]
+
+                line['value'] = ''
+
+                logger.debug(user_vars)
+
             # Set / add / subtract scoreboard
             elif variable['kind'] == 'set-add-remove':
                 if temp[2] == '=':
@@ -462,7 +493,7 @@ def generateUserSettings():
 
 if __name__ == '__main__':
     logger.info('made by Revon Zev')
-    logger.info('mcpy version 1.4.1')
+    logger.info('mcpy version 1.5.0')
 
     try:
         user_settings = json.loads(readFile('./user_settings.json'))
