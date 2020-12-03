@@ -89,9 +89,16 @@ files_path = []
 files_last_modified = []
 
 def main():
+    global user_vars
+    if not user_settings['variable_is_local']:
+        user_vars = {}
+
     deleteDist()
 
     for f_path in files_path:
+        if user_settings['variable_is_local']:
+            user_vars = {}
+
         logger.info('compiling {}', f_path.replace('\\', '/'))
         raw_text = readFile(f_path)
         text_lines = raw_text.split('\n')
@@ -139,15 +146,38 @@ def postcompiler(lines:list):
         lines = obfuscate_lines(lines)
 
     for i in range(len(lines)):
+        lines[i] = convertVars(lines[i])
+
         if re.match(r'^#.+$', lines[i]) and not user_settings['keep_comment']:
             continue
         # Skip empty lines
         elif lines[i] == '':
             continue
         else:
-            new_lines += [lines[i]]
+            new_lines += [lines[i]]        
 
     return new_lines
+
+
+def convertVars(line:str):
+    user_vars_keys = user_vars.keys()
+    for key in user_vars_keys:
+        value_type = type(user_vars[key])
+        if value_type == str:
+            line = line.replace(key, user_vars[key])
+        elif value_type == int:
+            line = line.replace(key, str(user_vars[key]))
+        # elif value_type == list:
+        #     temp = re.split('{}\[|\]'.format(key), line)
+        #     print(temp)
+        #     try:
+        #         line = re.sub('{}\[{}\]'.format(key, temp[1]), user_vars[key][int(temp[1])], line)
+        #     except IndexError:
+        #         line = line.replace(key, '[{}]'.format('"'+'", "'.join(user_vars[key])+'"'))
+        #     except ValueError:
+        #         line = line.replace(key, '[{}]'.format('"'+'", "'.join(user_vars[key])+'"'))
+    
+    return line
 
 
 def obfuscate_lines(lines:list):
@@ -254,7 +284,6 @@ def mcpyVars(line:str):
                 line['value'] = variable['command'].format(value=line['value'])
             
             elif variable['kind'] == 'declare-user-var':
-                #logger.debug(line)
                 try:
                     # Int
                     user_vars[temp[1]] = int(temp[3])
@@ -264,7 +293,7 @@ def mcpyVars(line:str):
                         temp[3] = re.sub(r'^.+\[|\"|\'|\]$', '', line['value'])
                         user_vars[temp[1]] = re.split(r',\s', temp[3])
                     # Dict
-                    if re.match(r'^.+{.+}$', line['value']):
+                    elif re.match(r'^.+{.+}$', line['value']):
                         temp[3] = re.sub(r'^.+{', '{', line['value'])
                         user_vars[temp[1]] = json.loads(temp[3])
                     # String
@@ -274,8 +303,6 @@ def mcpyVars(line:str):
                         user_vars[temp[1]] = temp[3]
 
                 line['value'] = ''
-
-                logger.debug(user_vars)
 
             # Set / add / subtract scoreboard
             elif variable['kind'] == 'set-add-remove':
@@ -304,6 +331,7 @@ def precompiler(lines:list):
     for i in range(0, len(lines)):
         if lines[i]['value'] == 'else:':
             lines[i]['value'] = mcpyElse(lines[:i+1])
+        
         elif re.match(r'^(if|unless).+matches\s\[.+(,\s.+)*,\s.+\]:$', lines[i]['value']):
             multi_ifs = mcpyMultiIfMatches(lines[i:])
             # Remove original child

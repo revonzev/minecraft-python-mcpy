@@ -60,7 +60,7 @@ in nether:
 # execute in nether if block ~ ~ ~ fire say Your burn is in a whole other dimensions
 ```
 
-## Variables
+## Scoreboards
 
 ### Defining
 ```
@@ -105,6 +105,49 @@ home @a := say Hello
 
 # execute store result score @a home run say Hello
 ```
+
+## Variables
+
+### Defining
+```
+var var_name = 0
+var var_name = 'String'
+var var_name = ['List', 'List']
+var var_name = {'Dict': 'value', 'Dict_2': 'value_2'}
+
+# Supported: Int, String, List, and Dict
+```
+Currently you can only define and set, no operation with it
+
+### Getting
+- Int
+    ```
+    var var_name = 100
+    say var_name
+
+    # say 100
+    ```
+    Note: All matching string will be replaced with the variable value
+
+- String
+    ```
+    var var_name = 'I am a var'
+    say var_name
+
+    # say I am a var
+    ```
+    Note: All matching string will be replaced with the variable value
+
+- List
+
+    Not currently supported
+
+- Dict
+
+    Not currently supported
+
+### Operation
+Not currently supported
 
 ## Obfuscation
 To generate a new obfuscation, delete `obfuscated_data.json`.
