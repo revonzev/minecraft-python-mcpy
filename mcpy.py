@@ -30,6 +30,8 @@ tokens = [
     Tokenizer(r'^.+\s\+=\s.+$', 'SCORE-ADD-SELF', 'scoreboard players add {} {} {}'),
     Tokenizer(r'^.+\s.+\s\-=\s.+$', 'SCORE-SUBTRACT', 'scoreboard players remove {} {} {}'),
     Tokenizer(r'^.+\s-=\s.+$', 'SCORE-SUBTRACT-SELF', 'scoreboard players remove {} {} {}'),
+    Tokenizer(r'^.+\s.+\s\:=\s.+$', 'SCORE-STORE', 'store result score {} {} run {}'),
+    Tokenizer(r'^.+\s:=\s.+$', 'SCORE-STORE-SELF', 'store result score {} {} run {}'),
     Tokenizer(r'^.+$', 'COMMAND'),
 ]
 
@@ -82,9 +84,22 @@ def scoreToCommands(lines):
                     line.text = token.command.format('@s', temp[0], temp[1])
                     break
                 elif token.kind == 'SCORE-OPERATION':
-                    temp = line.text.replace('', '')
-                    temp = temp.split()
+                    temp = line.text.split()
                     line.text = token.command.format(temp[1], temp[0], temp[2], temp[4], temp[3])
+                    break
+                elif token.kind == 'SCORE-STORE':
+                    temp = line.text.replace(':= ', '')
+                    temp = temp.split(maxsplit=2)
+                    line.text = token.command.format(temp[1], temp[0], temp[2])
+                    if line.parent == '':
+                        line.parent = 'execute '
+                    break
+                elif token.kind == 'SCORE-STORE-SELF':
+                    temp = line.text.replace(':= ', '')
+                    temp = temp.split(maxsplit=1)
+                    line.text = token.command.format('@s', temp[0], temp[1])
+                    if line.parent == '':
+                        line.parent = 'execute '
                     break
     return lines
 
