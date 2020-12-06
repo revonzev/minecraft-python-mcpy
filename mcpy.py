@@ -22,6 +22,7 @@ class Line:
 tokens = [
     Tokenizer(r'^as\sat\s.+:$', 'ASAT'),
     Tokenizer(r'^.+:$', 'EXECUTE'),
+    Tokenizer(r'^score\s.+\s(.+|.+\s".+")$', 'SCORE-DEFINE', 'scoreboard objectives add {} {} {}'),
     Tokenizer(r'^.+$', 'COMMAND'),
 ]
 
@@ -29,7 +30,20 @@ tokens = [
 def main(text:str):
     lines = listToLines(linesToList(text))
     lines = getParent(lines)
+    lines = scoreToCommands(lines)
     for i in lines: print(i.parent+i.text)
+
+
+def scoreToCommands(lines):
+    new_lines = []
+    for line in lines:
+        for token in tokens:
+            if re.match(token.pattern, line.text):
+                if token.kind == 'SCORE-DEFINE':
+                    temp = line.text.replace('score ', '')
+                    temp = temp.split()
+                    line.text = token.command.format(temp[0], temp[1], temp[2])
+    return lines
 
 
 def listToLines(lines:list):
@@ -85,5 +99,5 @@ def getParent(lines:list):
 
 
 if __name__ == '__main__':
-    test_str = 'say Hi\nas at @a:\n    at @p:\n        say Hello\n    say Good day\nsay HORA\nas @e:\n    say Hola\nsay Heyo'
+    test_str = 'say Hi\nas at @a:\n    at @p:\n        say Hello\n    say Good day\nscore home dummy "test"\nas @e:\n    say Hola\nsay Heyo'
     main(test_str)
