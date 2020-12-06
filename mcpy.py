@@ -1,549 +1,89 @@
-import json
 import re
-import os
-import shutil
-import copy
-import random
-import string
-import time
-from loguru import logger
-
-converter = {
-    "variables": [
-        {
-            "pattern": "^var\s.+$",
-            "command": "",
-            "replace": ["^var\s"],
-            "kind": "declare-user-var"
-        },
-        {
-            "pattern": "^score\s.+$",
-            "command": "scoreboard objectives add {value}",
-            "replace": ["^score\s"],
-            "kind": "declare"
-        },
-        {
-            "pattern": "^.+\s.+\s([+]=|-=|=)\s\d+$",
-            "command": "scoreboard players {operation} {target} {objective} {score}",
-            "replace": [""],
-            "kind": "set-add-remove"
-        },
-        {
-            "pattern": "^.+\s.+\s(((%|[*]|[+]|-|\/)=)|(=|<|>|><))\s.+\s.+$",
-            "command": "scoreboard players operation {target_1} {objective_1} {operation} {target_2} {objective_2}",
-            "replace": [""],
-            "kind": "operation"
-        },
-        {
-            "pattern": "^.+\s.+\s:=\s.+$",
-            "command": "store result score {target} {objective} run {command}",
-            "replace": [":=\s"],
-            "kind": "result"
-        },
-        {
-            "pattern": "^obf\s.+$",
-            "command": "",
-            "replace": [""],
-            "kind": "declare"
-        }
-    ],
-    "executes": [
-        {
-            "pattern": "^as\sat\s.+:$",
-            "command": "as {value} at @s",
-            "replace": ["^as\sat\s", ":$"],
-            "execute": True
-        },
-        {
-            "pattern": "^as\s[^(?!.*at)].+:$",
-            "command": "as {value}",
-            "replace": ["^as\s", ":$"],
-            "execute": True
-        },
-        {
-            "pattern": "^at\s[^(?!.*as)].+:$",
-            "command": "at {value}",
-            "replace": ["^at\s", ":$"],
-            "execute": True
-        },
-        {
-            "pattern": "^(if|unless|align|anchored|facing|in|positioned|rotated)\s.+:$",
-            "command": "{value}",
-            "replace": [":$"],
-            "execute": True
-        },
-        {
-            "pattern": "^.+\s.+\s:=\s.+$",
-            "command": "store result score {target} {objective} run {command}",
-            "replace": [":=\s"],
-            "execute": True
-        }
-    ]
-}
-
-user_vars = {}
-user_settings = {}
-obfuscated_str = {}
-used_obfuscated_str = {}
-files_path = []
-files_last_modified = []
-
-def main():
-    global user_vars
-    if not user_settings['variable_is_local']:
-        user_vars = {}
-
-    deleteDist()
-
-    for f_path in files_path:
-        if user_settings['variable_is_local']:
-            user_vars = {}
-
-        logger.info('compiling {}', f_path.replace('\\', '/'))
-        raw_text = readFile(f_path)
-        text_lines = raw_text.split('\n')
-
-        # Process
-        tabbed_lines = tabsReader(text_lines)
-        precompiled_lines = precompiler(tabbed_lines)
-        compiled_lines = compiler(precompiled_lines)
-        postcompiled_lines = postcompiler(compiled_lines)
-
-        writeOutputFiles(postcompiled_lines, f_path)
 
 
-def writeOutputFiles(lines:list, f_path:str):
-    # Write .mcfunction
-    f_to_w = f_path.replace('.mcpy', '.mcfunction')
-    text_to_w = '\n'.join(lines)
-    
-    writeFile(f_to_w, text_to_w)
-
-    # Write obfuscation data
-    if user_settings['keep_unused_obfuscated_string'] or not user_settings['obfuscate']:
-        text_to_w = json.dumps(obfuscated_str)
-    else:
-        text_to_w = json.dumps(used_obfuscated_str)
-
-    if user_settings['obfuscate']:
-        f_to_w = './obfuscated_data.json'
-        writeFile(f_to_w, text_to_w, False)
+class Tokenizer:
+    def __init__(self:object, pattern:str, kind:str, command='', replace=[]) -> None:
+        super().__init__()
+        self.pattern = pattern
+        self.command = command
+        self.replace = replace
+        self.kind = kind
 
 
-def individualFileOrGroup():
-    global files_path
-    
-    if user_settings['individual_file']:
-        for i in user_settings['files']:
-            files_path += [user_settings['base']+i]
-    else:
-        files_path = getFiles(user_settings['base'])
+class Line:
+    def __init__(self:object, text:str, indent:int, no:int, parent='') -> None:
+        super().__init__()
+        self.text = text
+        self.indent = indent
+        self.no = no
+        self.parent = parent
 
 
-def postcompiler(lines:list):
+tokens = [
+    Tokenizer(r'^as\sat\s.+:$', 'ASAT'),
+    Tokenizer(r'^.+:$', 'EXECUTE'),
+    Tokenizer(r'^.+$', 'COMMAND'),
+]
+
+
+def main(text:str):
+    lines = listToLines(linesToList(text))
+    lines = getParent(lines)
+    for i in lines: print(i.parent+i.text)
+
+
+def listToLines(lines:list):
     new_lines = []
-    if user_settings['obfuscate']:
-        lines = obfuscate_lines(lines)
-
-    for i in range(len(lines)):
-        lines[i] = convertVars(lines[i])
-
-        if re.match(r'^#.+$', lines[i]) and not user_settings['keep_comment']:
-            continue
-        # Skip empty lines
-        elif lines[i] == '':
-            continue
-        else:
-            new_lines += [lines[i]]        
-
-    return new_lines
-
-
-def convertVars(line:str):
-    user_vars_keys = user_vars.keys()
-    for key in user_vars_keys:
-        value_type = type(user_vars[key])
-        if value_type == str:
-            line = line.replace(key, user_vars[key])
-        elif value_type == int:
-            line = line.replace(key, str(user_vars[key]))
-        # elif value_type == list:
-        #     temp = re.split('{}\[|\]'.format(key), line)
-        #     print(temp)
-        #     try:
-        #         line = re.sub('{}\[{}\]'.format(key, temp[1]), user_vars[key][int(temp[1])], line)
-        #     except IndexError:
-        #         line = line.replace(key, '[{}]'.format('"'+'", "'.join(user_vars[key])+'"'))
-        #     except ValueError:
-        #         line = line.replace(key, '[{}]'.format('"'+'", "'.join(user_vars[key])+'"'))
-    
-    return line
-
-
-def obfuscate_lines(lines:list):
-    obfuscated_str_keys = list(obfuscated_str.keys())
-    new_lines = []
-    for i in range(len(lines)):
-        # Obfuscate strings
-        for ia in range(len(obfuscated_str)):
-            lines[i] = lines[i].replace(obfuscated_str_keys[ia], obfuscated_str[obfuscated_str_keys[ia]])
-
-        new_lines += [lines[i]]
-
-    return new_lines
-
-
-def compiler(lines:list):
-    for i in range(len(lines)):
-        lines[i] = mcpyVars(lines[i])
-
-    # Execute and compile it
-    lines = mcpyExecute(lines)
-
-    return lines
-
-
-def mcpyExecute(lines:list):
-    new_lines = []
-    parent = []
-    
-    for i in range(0, len(lines)):
-        lines[i]['execute'] = False
-
-        # Is it part of execute command? change it into mincraft command
-        for execute in converter['executes']:
-            if re.match(execute['pattern'], lines[i]['value']):
-                lines[i]['execute'] = execute['execute']
-                for ia in execute['replace']:
-                    if ia == ':':
-                        lines[i]['value'] = lines[i]['value'][:-1]
-                    else:
-                        lines[i]['value'] = re.sub(ia, '', lines[i]['value'])
-                # Compile the Mcpy execute line to Minecraft's
-                lines[i]['value'] = execute['command'].format(value=lines[i]['value'])
-        
-        # If there is no execute chain yet, make one
-        if lines[i]['execute'] == True and parent == []:
-            parent += [{'value':lines[i]['value'], 'tabs':lines[i]['tabs']}]
-
-        # There's already a chain? let's keep it going
-        elif parent != [] and lines[i]['tabs'] > parent[0]['tabs']:
-            # Is it part of an execute command?
-            if lines[i]['execute'] == True:
-                for ia in range(0, lines[i]['tabs']):
-                    parent += [{'tabs': ia, 'value': ''}]
-                parent = parent[:lines[i]['tabs']+1]
-                parent[lines[i]['tabs']]['value'] = parent[lines[i]['tabs']-1]['value'] + ' ' + lines[i]['value']
-            else:
-                new_lines += ['execute ' + parent[lines[i]['tabs']-1]['value'] + ' run ' + lines[i]['value']]
-                try:
-                    for ia in range(1, len(lines[i:])):
-                        # Skip comments
-                        if lines[i+ia]['tabs'] == -1:
-                            continue
-                        # Is the next line not a child? If yes, reset the parent
-                        elif lines[i+ia]['tabs'] <= parent[0]['tabs']:
-                            parent = []
-                            break
-                        else: break
-                # Reached end of file
-                except IndexError:
-                    parent = []
-        # It's a store command without execute? Put it in
-        elif re.match('^store.+$', lines[i]['value']):
-            new_lines += ['execute ' + lines[i]['value']]
-        # A normal command? Just add it to new lines
-        else:
-            new_lines += [lines[i]['value']]
-
-    return new_lines
-
-def mcpyVars(line:str):
-    for variable in converter['variables']:
-        global obfuscated_str
-        global used_obfuscated_str
-        if re.match(variable['pattern'], line['value']):
-            temp = line['value'].split(' ')
-
-            for i in variable['replace']:
-                line['value'] = re.sub(i, '', line['value'])
-            
-            # Define scoreboard and tags
-            if variable['kind'] == 'declare':
-                if user_settings['obfuscate'] == True:
-                    try:
-                        obfuscated_temp = obfuscated_str[temp[1]]
-                    except KeyError:
-                        obfuscated_temp = ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(16))
-                        obfuscated_str[temp[1]] = obfuscated_temp
-                    used_obfuscated_str[temp[1]] = obfuscated_str[temp[1]]
-                    # Sort from longest to shorest, to avoid string replacement issue
-                    obfuscated_str = dict(sorted(obfuscated_str.items(), key=lambda item: (-len(item[0]), item[0])))
-                    used_obfuscated_str = dict(sorted(used_obfuscated_str.items(), key=lambda item: (-len(item[0]), item[0])))
-                    line['value'] = re.sub(r'(\"|\').+(\"|\')', '""', line['value'])
-                line['value'] = variable['command'].format(value=line['value'])
-            
-            elif variable['kind'] == 'declare-user-var':
-                try:
-                    # Int
-                    user_vars[temp[1]] = int(temp[3])
-                except ValueError:
-                    # List
-                    if re.match(r'^.+\[.+\]$', line['value']):
-                        temp[3] = re.sub(r'^.+\[|\"|\'|\]$', '', line['value'])
-                        user_vars[temp[1]] = re.split(r',\s', temp[3])
-                    # Dict
-                    elif re.match(r'^.+{.+}$', line['value']):
-                        temp[3] = re.sub(r'^.+{', '{', line['value'])
-                        user_vars[temp[1]] = json.loads(temp[3])
-                    # String
-                    else:
-                        temp[3] = re.sub(r'^(.+\s=\s)(\'|\")', '', line['value'])
-                        temp[3] = re.sub(r'(\'|\")$', '', temp[3])
-                        user_vars[temp[1]] = temp[3]
-
-                line['value'] = ''
-
-            # Set / add / subtract scoreboard
-            elif variable['kind'] == 'set-add-remove':
-                if temp[2] == '=':
-                    temp[2] = 'set'
-                elif temp[2] == '+=':
-                    temp[2] = 'add'
-                elif temp[2] == '-=':
-                    temp[2] = 'remove'
-                
-                line['value'] = variable['command'].format(objective=temp[0], target=temp[1], operation=temp[2], score=temp[3])
-            
-            # Operation scoreboard
-            elif variable['kind'] == 'operation':
-                line['value'] = variable['command'].format(objective_1=temp[0], target_1=temp[1], operation=temp[2], objective_2=temp[3], target_2=temp[4])
-            
-            # Store result of command
-            elif variable['kind'] == 'result':
-                temp = line['value'].split(' ', 2)
-                line['value'] = variable['command'].format(objective=temp[0], target=temp[1], command=temp[2])
-
-    return line
-            
-
-def precompiler(lines:list):
-    for i in range(0, len(lines)):
-        if lines[i]['value'] == 'else:':
-            lines[i]['value'] = mcpyElse(lines[:i+1])
-        
-        elif re.match(r'^(if|unless).+matches\s\[.+(,\s.+)*,\s.+\]:$', lines[i]['value']):
-            multi_ifs = mcpyMultiIfMatches(lines[i:])
-            # Remove original child
-            for _ in range(0, multi_ifs[0]+1):
-                lines.pop(i)
-            multi_ifs.pop(0)
-            # Insert the ifs
-            for an_if in reversed(multi_ifs):
-                lines.insert(i, copy.deepcopy(an_if))
-            # Continue but with the new lines
-            precompiled_lines = precompiler(lines)
-            return precompiled_lines
-
-    return lines
-
-
-def mcpyMultiIfMatches(lines:list):
-    data = re.split(r'\[|, |]', lines[0]['value'])[1:-1]
-    lines[0]['value'] = re.sub(r',|\[|\]', '',lines[0]['value'])
-    lines_child = []
-    multi_ifs = []
-
-    # Find the child of the multi if matches
-    for i in range(0, len(lines)):
-        # Skip first line (the 'if ... match ... []')
-        if lines[i]['value'] == lines[0]['value']:
-            continue
-
-        if lines[i]['tabs'] > lines[0]['tabs']:
-            lines_child += [lines[i]]
-        # Skip comments
-        elif lines[i]['tabs'] == -1:
-            continue
-        else:
-            break
-    
-    # Generate the multiple if lines
-    for i in range(len(data)):
-        if_line = copy.deepcopy(lines[0])
-
-        for ia in range(len(data)):
-            if data[i] != data[ia]:
-                if_line['value'] = if_line['value'].replace(' '+data[ia], '')
-
-        multi_ifs += [if_line]
-        multi_ifs += lines_child
-
-    multi_ifs.insert(0, len(lines_child))
-    return multi_ifs
-
-def mcpyElse(lines:list):
-    else_line = ''
-
-    for i in range(len(lines)-1, 0, -1):
-        # Skip 'else:'
-        if lines[i]['value'] == 'else':
-            continue
-
-        # Is the line in the same indentation
-        # And an if or unless?
-        elif re.match(r'^(if|unless).+:$', lines[i]['value']) and lines[i]['tabs'] == lines[-1]['tabs']:
-            else_line = lines[i]['value'].replace('if', 'khdth')
-            else_line = else_line.replace('unless', 'if')
-            else_line = else_line.replace('khdth', 'unless')
-            break
-
-    return else_line
-
-def tabsReader(lines:list):
-    tabbed_lines = []
-    
+    no = 0
     for line in lines:
-        tabbed_line = {'value': '', 'tabs': 0}
-        line = line.split(user_settings['tab_style'])
-        
-        for i in line:
-            if i == '':
-                tabbed_line['tabs'] += 1
-            else:
-                tabbed_line['value'] = i
-        
-        # Is it a comment?
-        if re.match(r'^(#|//).+$', tabbed_line['value']):
-            tabbed_line['tabs'] = -1
-            tabbed_line['value'] = tabbed_line['value'].replace('//', '#')
-        
-        # Remove empty line
-        if tabbed_line['value'] == '':
-            continue
-        else:
-            tabbed_lines += [tabbed_line]
-
-    return tabbed_lines
+        text = re.sub('\s\s\s\s', '', line)
+        indent = len(re.findall('\s\s\s\s|\t', line))
+        no += 1
+        new_lines += [Line(text, indent, no)]
+    return new_lines
 
 
-def readFile(f_path:str):
-    with open(f_path, 'r') as file:
-        file_inner = file.read()
-    return file_inner
+def linesToList(text:str):
+    return text.split('\n')
 
 
-def writeFile(f_path:str, data:str, dist=True):
-    if dist == True:
-        f_path = f_path.replace(user_settings['base'], '')
-        f_path = f_path.replace('./', '')
-        f_path = ''.join(user_settings['dist']+f_path)
-    elif user_settings['base'] != './':
-        f_path = f_path.replace(user_settings['base'], './')
+def getParent(lines:list):
+    current_parents = []
+    current_indent = -1
+    new_lines = []
+    for line in lines:
+        for token in tokens:
+            if re.match(token.pattern, line.text):
+                if token.kind == 'ASAT':
+                    temp = line.text.replace('at ', '')
+                    temp = temp[:-1]
+                    line.text = f'{temp} at @s:'
+                elif token.kind == 'EXECUTE' and current_indent < line.indent:
+                    current_parents += [line.text[:-1]]
+                    current_indent = line.indent
+                    break
+                elif token.kind == 'EXECUTE' and current_indent >= line.indent:
+                    current_parents = current_parents[:line.indent+1]
+                    current_parents[line.indent] = line.text[:-1]
+                    current_indent = line.indent
+                    break
+                elif token.kind == 'COMMAND' and new_lines != []:
+                    current_parents = current_parents[:line.indent]
+                    if line.indent == 0:
+                        current_indent = -1
+                        new_lines += [line]
+                        break
+                    else:
+                        current_indent = line.indent
+                        new_lines += [Line(line.text, line.indent, line.no, 'execute '+' '.join(current_parents)+' run ')]
+                        break
+                else:
+                    new_lines += [line]
+                    break
 
-    generatePath(f_path)
-
-    logger.info('writing {}', f_path.replace('\\', '/'))
-    with open(f_path, 'w') as file:
-        file.write(data)
-
-
-def generatePath(f_path:str):
-    f_path = f_path.replace(os.path.basename(f_path), '').replace('./', '')
-    f_path = f_path.split('/')
-    current_path = './'
-    for i in f_path:
-        if i != '':
-            current_path += i + '/'
-            if not os.path.exists(current_path):
-                os.mkdir(current_path)
-
-
-# From https://appdividend.com/2020/01/20/python-list-of-files-in-directory-and-subdirectories/
-def getFiles(dirPath):
-    listOfFile = os.listdir(dirPath)
-    completeFileList = []
-    for file in listOfFile:
-        completePath = os.path.join(dirPath, file)
-        if os.path.isdir(completePath):
-            completeFileList += getFiles(completePath)
-        elif completePath.endswith('.mcpy'):
-            completeFileList.append(completePath)
-
-    return completeFileList
-
-
-def deleteDist():
-    try:
-        shutil.rmtree(user_settings['dist'])
-    except FileNotFoundError:
-        logger.error('Project base not found {}', user_settings['dist'])
-        return
-
-
-def checkLastModified():
-    global files_last_modified
-    files_newly_modified = []
-    hasModified = False
-
-    if files_last_modified == []:
-        for f_path in files_path:
-            files_last_modified  += [os.stat(f_path).st_mtime]
-        hasModified = True
-    else:
-        for f_path in files_path:
-            files_newly_modified += [os.stat(f_path).st_mtime]
-        
-        hasModified = files_last_modified != files_newly_modified
-        files_last_modified = files_newly_modified
-
-    return hasModified
-
-
-def generateUserSettings():
-    global user_settings
-    user_settings = {
-        "watch_delay": 5,
-        "individual_file": False,
-        "files": [
-            "my_files.mcpy"
-        ],
-        "dist": "./dist/",
-        "base": "./",
-        "tab_style": "    ",
-        "keep_comment": True,
-        "obfuscate": False,
-        "keep_unused_obfuscated_string": False
-    }
-
-    writeFile('./user_settings.json', json.dumps(user_settings, indent=4), False)
+    return new_lines
 
 
 if __name__ == '__main__':
-    logger.info('made by Revon Zev')
-    logger.info('mcpy version 1.5.0')
-
-    try:
-        user_settings = json.loads(readFile('./user_settings.json'))
-    except FileNotFoundError:
-        logger.error('./user_settings.json not found')
-        logger.info('generate new ./user_settings.json')
-        generateUserSettings()
-        
-    try:
-        obfuscated_str = json.loads(readFile('./obfuscated_data.json'))
-    except FileNotFoundError:
-        pass
-
-    while True:
-        individualFileOrGroup()
-
-        if checkLastModified():
-            logger.info('compiling...')
-            main()
-            logger.info('finished compiling')
-
-        if user_settings['watch_delay'] == 0:
-            input('continue? (Enter)')
-        else:
-            time.sleep(user_settings['watch_delay'])
+    test_str = 'say Hi\nas at @a:\n    at @p:\n        say Hello\n    say Good day\nsay HORA\nas @e:\n    say Hola\nsay Heyo'
+    main(test_str)

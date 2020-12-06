@@ -114,8 +114,6 @@ var var_name = 0
 var var_name = 'String'
 var var_name = ['List', 'List']
 var var_name = {'Dict': 'value', 'Dict_2': 'value_2'}
-
-# Supported: Int, String, List, and Dict
 ```
 Currently you can only define and set, no operation with it
 
