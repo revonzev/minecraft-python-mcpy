@@ -22,7 +22,14 @@ class Line:
 tokens = [
     Tokenizer(r'^as\sat\s.+:$', 'ASAT'),
     Tokenizer(r'^.+:$', 'EXECUTE'),
-    Tokenizer(r'^score\s.+\s(.+|.+\s".+")$', 'SCORE-DEFINE', 'scoreboard objectives add {} {} {}'),
+    Tokenizer(r'^score\s.+\s[.+|.+\s".+"]$', 'SCORE-DEFINE', 'scoreboard objectives add {} {} {}'),
+    Tokenizer(r'^score\s.+\s=\s.+$', 'SCORE-SET', 'scoreboard players set {} {} {}'),
+    Tokenizer(r'^.+\s.+\s[%|\*|\+|\-|\\|][=|<|>|><]\s.+\s.+$', 'SCORE-OPERATION', 'scoreboard players operation {} {} {} {} {}'),
+    Tokenizer(r'^.+\s=\s.+$', 'SCORE-SET-SELF', 'scoreboard players set {} {} {}'),
+    Tokenizer(r'^.+\s.+\s\+=\s.+$', 'SCORE-ADD', 'scoreboard players add {} {} {}'),
+    Tokenizer(r'^.+\s\+=\s.+$', 'SCORE-ADD-SELF', 'scoreboard players add {} {} {}'),
+    Tokenizer(r'^.+\s.+\s\-=\s.+$', 'SCORE-SUBTRACT', 'scoreboard players remove {} {} {}'),
+    Tokenizer(r'^.+\s-=\s.+$', 'SCORE-SUBTRACT-SELF', 'scoreboard players remove {} {} {}'),
     Tokenizer(r'^.+$', 'COMMAND'),
 ]
 
@@ -43,6 +50,42 @@ def scoreToCommands(lines):
                     temp = line.text.replace('score ', '')
                     temp = temp.split()
                     line.text = token.command.format(temp[0], temp[1], temp[2])
+                    break
+                elif token.kind == 'SCORE-SET':
+                    temp = line.text.replace('= ', '')
+                    temp = temp.split()
+                    line.text = token.command.format(temp[1], temp[0], temp[2])
+                    break
+                elif token.kind == 'SCORE-SET-SELF':
+                    temp = line.text.replace('= ', '')
+                    temp = temp.split()
+                    line.text = token.command.format('@s', temp[0], temp[1])
+                    break
+                elif token.kind == 'SCORE-ADD':
+                    temp = line.text.replace('+= ', '')
+                    temp = temp.split()
+                    line.text = token.command.format(temp[1], temp[0], temp[2])
+                    break
+                elif token.kind == 'SCORE-ADD-SELF':
+                    temp = line.text.replace('+= ', '')
+                    temp = temp.split()
+                    line.text = token.command.format('@s', temp[0], temp[1])
+                    break
+                elif token.kind == 'SCORE-SUBTRACT':
+                    temp = line.text.replace('-= ', '')
+                    temp = temp.split()
+                    line.text = token.command.format(temp[1], temp[0], temp[2])
+                    break
+                elif token.kind == 'SCORE-SUBTRACT-SELF':
+                    temp = line.text.replace('-= ', '')
+                    temp = temp.split()
+                    line.text = token.command.format('@s', temp[0], temp[1])
+                    break
+                elif token.kind == 'SCORE-OPERATION':
+                    temp = line.text.replace('', '')
+                    temp = temp.split()
+                    line.text = token.command.format(temp[1], temp[0], temp[2], temp[4], temp[3])
+                    break
     return lines
 
 
@@ -50,9 +93,11 @@ def listToLines(lines:list):
     new_lines = []
     no = 0
     for line in lines:
-        text = re.sub('\s\s\s\s', '', line)
+        text = re.sub('\s\s\s\s|\t', '', line)
         indent = len(re.findall('\s\s\s\s|\t', line))
         no += 1
+        if re.match(r'^#|//.+$', text):
+            continue
         new_lines += [Line(text, indent, no)]
     return new_lines
 
@@ -81,7 +126,7 @@ def getParent(lines:list):
                     current_parents[line.indent] = line.text[:-1]
                     current_indent = line.indent
                     break
-                elif token.kind == 'COMMAND' and new_lines != []:
+                else:
                     current_parents = current_parents[:line.indent]
                     if line.indent == 0:
                         current_indent = -1
@@ -91,13 +136,15 @@ def getParent(lines:list):
                         current_indent = line.indent
                         new_lines += [Line(line.text, line.indent, line.no, 'execute '+' '.join(current_parents)+' run ')]
                         break
-                else:
-                    new_lines += [line]
-                    break
 
     return new_lines
 
 
+def readFile(f_path:str):
+    with open(f_path, 'r') as file:
+        file_inner = file.read()
+    return file_inner
+
+
 if __name__ == '__main__':
-    test_str = 'say Hi\nas at @a:\n    at @p:\n        say Hello\n    say Good day\nscore home dummy "test"\nas @e:\n    say Hola\nsay Heyo'
-    main(test_str)
+    main(readFile('./tests/test.mcpy'))
