@@ -22,9 +22,9 @@ class Line:
 tokens = [
     Tokenizer(r'^as\sat\s.+:$', 'ASAT'),
     Tokenizer(r'^.+:$', 'EXECUTE'),
-    Tokenizer(r'^score\s.+\s[.+|.+\s".+"]$', 'SCORE-DEFINE', 'scoreboard objectives add {} {} {}'),
+    Tokenizer(r'^score\s.+\s(.+|.+\s\".+\")$', 'SCORE-DEFINE', 'scoreboard objectives add {} {} {}'),
     Tokenizer(r'^score\s.+\s=\s.+$', 'SCORE-SET', 'scoreboard players set {} {} {}'),
-    Tokenizer(r'^.+\s.+\s[%|\*|\+|\-|\\|][=|<|>|><]\s.+\s.+$', 'SCORE-OPERATION', 'scoreboard players operation {} {} {} {} {}'),
+    Tokenizer(r'^.+\s.+\s(%|\*|\+|\-|\\|)(=|<|>|(><))\s.+\s.+$', 'SCORE-OPERATION', 'scoreboard players operation {} {} {} {} {}'),
     Tokenizer(r'^.+\s=\s.+$', 'SCORE-SET-SELF', 'scoreboard players set {} {} {}'),
     Tokenizer(r'^.+\s.+\s\+=\s.+$', 'SCORE-ADD', 'scoreboard players add {} {} {}'),
     Tokenizer(r'^.+\s\+=\s.+$', 'SCORE-ADD-SELF', 'scoreboard players add {} {} {}'),
@@ -49,37 +49,40 @@ def scoreToCommands(lines):
         for token in tokens:
             if re.match(token.pattern, line.text):
                 if token.kind == 'SCORE-DEFINE':
-                    temp = line.text.replace('score ', '')
+                    temp = re.sub('^score ', '', line.text)
                     temp = temp.split()
-                    line.text = token.command.format(temp[0], temp[1], temp[2])
+                    if len(temp) == 3:
+                        line.text = token.command.format(temp[0], temp[1], temp[2])
+                    elif len(temp) == 2:
+                        line.text = token.command.format(temp[0], temp[1], '')
                     break
                 elif token.kind == 'SCORE-SET':
-                    temp = line.text.replace('= ', '')
+                    temp = line.text.replace('= ', '', 1)
                     temp = temp.split()
                     line.text = token.command.format(temp[1], temp[0], temp[2])
                     break
                 elif token.kind == 'SCORE-SET-SELF':
-                    temp = line.text.replace('= ', '')
+                    temp = line.text.replace('= ', '', 1)
                     temp = temp.split()
                     line.text = token.command.format('@s', temp[0], temp[1])
                     break
                 elif token.kind == 'SCORE-ADD':
-                    temp = line.text.replace('+= ', '')
+                    temp = line.text.replace('+= ', '', 1)
                     temp = temp.split()
                     line.text = token.command.format(temp[1], temp[0], temp[2])
                     break
                 elif token.kind == 'SCORE-ADD-SELF':
-                    temp = line.text.replace('+= ', '')
+                    temp = line.text.replace('+= ', '', 1)
                     temp = temp.split()
                     line.text = token.command.format('@s', temp[0], temp[1])
                     break
                 elif token.kind == 'SCORE-SUBTRACT':
-                    temp = line.text.replace('-= ', '')
+                    temp = line.text.replace('-= ', '', 1)
                     temp = temp.split()
                     line.text = token.command.format(temp[1], temp[0], temp[2])
                     break
                 elif token.kind == 'SCORE-SUBTRACT-SELF':
-                    temp = line.text.replace('-= ', '')
+                    temp = line.text.replace('-= ', '', 1)
                     temp = temp.split()
                     line.text = token.command.format('@s', temp[0], temp[1])
                     break
@@ -88,14 +91,14 @@ def scoreToCommands(lines):
                     line.text = token.command.format(temp[1], temp[0], temp[2], temp[4], temp[3])
                     break
                 elif token.kind == 'SCORE-STORE':
-                    temp = line.text.replace(':= ', '')
+                    temp = line.text.replace(':= ', '', 1)
                     temp = temp.split(maxsplit=2)
                     line.text = token.command.format(temp[1], temp[0], temp[2])
                     if line.parent == '':
                         line.parent = 'execute '
                     break
                 elif token.kind == 'SCORE-STORE-SELF':
-                    temp = line.text.replace(':= ', '')
+                    temp = line.text.replace(':= ', '', 1)
                     temp = temp.split(maxsplit=1)
                     line.text = token.command.format('@s', temp[0], temp[1])
                     if line.parent == '':
