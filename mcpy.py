@@ -21,6 +21,7 @@ class Line:
 
 tokens = [
     Tokenizer(r'^as\sat\s.+:$', 'ASAT'),
+    Tokenizer(r'^else:$', 'ELSE'),
     Tokenizer(r'^.+:$', 'EXECUTE'),
     Tokenizer(r'^score\s.+\s(.+|.+\s\".+\")$', 'SCORE-DEFINE', 'scoreboard objectives add {} {} {}'),
     Tokenizer(r'^score\s.+\s=\s.+$', 'SCORE-SET', 'scoreboard players set {} {} {}'),
@@ -143,6 +144,11 @@ def getParent(lines:list):
                     current_parents = current_parents[:line.indent+1]
                     current_parents[line.indent] = line.text[:-1]
                     current_indent = line.indent
+                    break
+                elif token.kind == 'ELSE':
+                    temp = re.sub(r'^if', 'kecvd', current_parents[line.indent])
+                    temp = re.sub(r'^unless', 'if', temp)
+                    current_parents[line.indent] = re.sub(r'^kecvd', 'unless', temp)
                     break
                 else:
                     current_parents = current_parents[:line.indent]
