@@ -1,9 +1,12 @@
 import re
 import os
+import json
+
+settings_version = 1
 
 
 class UserSettings:
-    def __init__(self, watch_delay = 5, individual_file = False, files = [], dist = './dist/', base = './tests/',
+    def __init__(self, watch_delay = 5, individual_file = False, files = [], dist = './dist/', base = './',
     tab_style = "    ", obfuscate = False, keep_unused_obfuscated_string = False) -> None:
         super().__init__()
         self.watch_delay = watch_delay
@@ -14,6 +17,28 @@ class UserSettings:
         self.tab_style = tab_style
         self.obfuscate = obfuscate
         self.keep_unused_obfuscated_string = keep_unused_obfuscated_string
+        self.settings_version = settings_version
+    
+
+    def load(self):
+        f = json.loads(readFile('./user_settings.json'))
+        self.watch_delay = f['watch_delay']
+        self.individual_file = f['individual_file']
+        self.files = f['files']
+        self.dist = f['dist']
+        self.base = f['base']
+        self.tab_style = f['tab_style']
+        self.obfuscate = f['obfuscate']
+        self.keep_unused_obfuscated_string = f['keep_unused_obfuscated_string']
+        self.settings_version = f['settings_version']
+    
+
+    def generate(self, keep_old_settings = False):
+        if keep_old_settings:
+            f = json.loads(readFile('./user_settings.json'))
+            writeFile('./user_settings_old.json', json.dumps(f, indent=4), False)
+        self.settings_version = settings_version
+        writeFile('./user_settings.json', json.dumps(self.__dict__, indent=4), False)
 
 
 class Tokenizer:
@@ -213,4 +238,15 @@ def generatePath(f_path:str):
 
 if __name__ == '__main__':
     settings = UserSettings()
+
+    try:
+        settings.load()
+    except FileNotFoundError:
+        settings.generate()
+    except KeyError:
+        settings.generate(True)
+    
+    if settings.settings_version != settings_version:
+        settings.generate(True)
+
     main(readFile('./tests/test.mcpy'))
