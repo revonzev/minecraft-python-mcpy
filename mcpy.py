@@ -1,12 +1,26 @@
 import re
+import os
+
+
+class UserSettings:
+    def __init__(self, watch_delay = 5, individual_file = False, files = [], dist = './dist/', base = './tests/',
+    tab_style = "    ", obfuscate = False, keep_unused_obfuscated_string = False) -> None:
+        super().__init__()
+        self.watch_delay = watch_delay
+        self.individual_file = individual_file
+        self.files = files
+        self.dist = dist
+        self.base = base
+        self.tab_style = tab_style
+        self.obfuscate = obfuscate
+        self.keep_unused_obfuscated_string = keep_unused_obfuscated_string
 
 
 class Tokenizer:
-    def __init__(self:object, pattern:str, kind:str, command='', replace=[]) -> None:
+    def __init__(self:object, pattern:str, kind:str, command='') -> None:
         super().__init__()
         self.pattern = pattern
         self.command = command
-        self.replace = replace
         self.kind = kind
 
 
@@ -41,11 +55,13 @@ def main(text:str):
     lines = listToLines(linesToList(text))
     lines = getParent(lines)
     lines = scoreToCommands(lines)
-    for i in lines: print(i.parent+i.text)
+    lines_str = ''
+    for line in lines:
+        lines_str += f'{line.parent}{line.text}\n'
+    writeFile('./test.mcfunction', lines_str)
 
 
 def scoreToCommands(lines):
-    new_lines = []
     for line in lines:
         for token in tokens:
             if re.match(token.pattern, line.text):
@@ -170,5 +186,31 @@ def readFile(f_path:str):
     return file_inner
 
 
+def writeFile(f_path:str, data:str, dist=True):
+    if dist == True:
+        f_path = f_path.replace(settings.base, '')
+        f_path = f_path.replace('./', '')
+        f_path = ''.join(settings.dist+f_path)
+    elif settings.base != './':
+        f_path = f_path.replace(settings.base, './')
+
+    generatePath(f_path)
+
+    with open(f_path, 'w') as file:
+        file.write(data)
+
+
+def generatePath(f_path:str):
+    f_path = f_path.replace(os.path.basename(f_path), '').replace('./', '')
+    f_path = f_path.split('/')
+    current_path = './'
+    for i in f_path:
+        if i != '':
+            current_path += i + '/'
+            if not os.path.exists(current_path):
+                os.mkdir(current_path)
+
+
 if __name__ == '__main__':
+    settings = UserSettings()
     main(readFile('./tests/test.mcpy'))
