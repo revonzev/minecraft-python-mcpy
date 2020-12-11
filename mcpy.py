@@ -1,6 +1,8 @@
 import re
 import os
 import json
+import shutil
+import time
 
 settings_version = 1
 
@@ -76,14 +78,15 @@ tokens = [
 ]
 
 
-def main(text:str):
+def main(f_path:str):
+    text = readFile(f_path)
     lines = listToLines(linesToList(text))
     lines = getParent(lines)
     lines = scoreToCommands(lines)
     lines_str = ''
     for line in lines:
         lines_str += f'{line.parent}{line.text}\n'
-    writeFile('./test.mcfunction', lines_str)
+    writeOutputFiles(lines, f_path)
 
 
 def scoreToCommands(lines):
@@ -227,7 +230,7 @@ def writeFile(f_path:str, data:str, dist=True):
 
 def generatePath(f_path:str):
     f_path = f_path.replace(os.path.basename(f_path), '').replace('./', '')
-    f_path = f_path.split('/')
+    f_path = re.split(r'/|\\', f_path)
     current_path = './'
     for i in f_path:
         if i != '':
@@ -236,8 +239,69 @@ def generatePath(f_path:str):
                 os.mkdir(current_path)
 
 
+# From https://appdividend.com/2020/01/20/python-list-of-files-in-directory-and-subdirectories/
+def getFiles(dirPath):
+    listOfFile = os.listdir(dirPath)
+    completeFileList = []
+    for file in listOfFile:
+        completePath = os.path.join(dirPath, file)
+        if os.path.isdir(completePath):
+            completeFileList += getFiles(completePath)
+        elif completePath.endswith('.mcpy'):
+            completeFileList.append(completePath)
+
+    return completeFileList
+
+
+def writeOutputFiles(lines:Line, f_path:str):
+    # Write .mcfunction
+    f_path = f_path.replace('.mcpy', '.mcfunction')
+    lines_list = ''
+    for line in lines:
+        lines_list += f'{line.parent}{line.text}\n'
+    
+    writeFile(f_path, lines_list)
+
+    # # Write obfuscation data
+    # if user_settings['keep_unused_obfuscated_string'] or not user_settings['obfuscate']:
+    #     text_to_w = json.dumps(obfuscated_str)
+    # else:
+    #     text_to_w = json.dumps(used_obfuscated_str)
+
+    # if user_settings['obfuscate']:
+    #     f_to_w = './obfuscated_data.json'
+    #     writeFile(f_to_w, text_to_w, False)
+
+
+def deleteDist():
+    try:
+        shutil.rmtree(settings.dist)
+    except FileNotFoundError:
+        return
+
+
+def isModified():
+    global files_last_modified
+    files_newly_modified = []
+    hasModified = False
+
+    if files_last_modified == []:
+        for f_path in files_path:
+            files_last_modified  += [os.stat(f_path).st_mtime]
+        hasModified = True
+    else:
+        for f_path in files_path:
+            files_newly_modified += [os.stat(f_path).st_mtime]
+        
+        hasModified = files_last_modified != files_newly_modified
+        files_last_modified = files_newly_modified
+
+    return hasModified
+
+
 if __name__ == '__main__':
     settings = UserSettings()
+    files_last_modified = []
 
     try:
         settings.load()
@@ -249,4 +313,15 @@ if __name__ == '__main__':
     if settings.settings_version != settings_version:
         settings.generate(True)
 
-    main(readFile('./tests/test.mcpy'))
+    while True:
+        files_path = getFiles(settings.base)
+
+        if isModified():
+            deleteDist()
+            for file in files_path:
+                main(file)
+            
+        if settings.watch_delay != 0:
+            time.sleep(settings.watch_delay)
+        else:
+            input('Enter to compile')
