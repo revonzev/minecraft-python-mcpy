@@ -8,12 +8,10 @@ settings_version = 1
 
 
 class UserSettings:
-    def __init__(self, watch_delay = 5, individual_file = False, files = [], dist = './dist/', base = './',
+    def __init__(self, watch_delay = 5, dist = './dist/', base = './',
     tab_style = "    ", obfuscate = False, keep_unused_obfuscated_string = False) -> None:
         super().__init__()
         self.watch_delay = watch_delay
-        self.individual_file = individual_file
-        self.files = files
         self.dist = dist
         self.base = base
         self.tab_style = tab_style
@@ -25,8 +23,6 @@ class UserSettings:
     def load(self):
         f = json.loads(readFile('./user_settings.json'))
         self.watch_delay = f['watch_delay']
-        self.individual_file = f['individual_file']
-        self.files = f['files']
         self.dist = f['dist']
         self.base = f['base']
         self.tab_style = f['tab_style']
