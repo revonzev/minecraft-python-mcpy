@@ -1,10 +1,10 @@
+import random
 import re
 import os
 import json
 import shutil
+import string
 import time
-
-settings_version = 1
 
 
 class UserSettings:
@@ -80,9 +80,33 @@ def main(f_path:str):
     lines = getParent(lines)
     lines = scoreToCommands(lines)
     lines_str = ''
+
     for line in lines:
         lines_str += f'{line.parent}{line.text}\n'
-    writeOutputFiles(lines, f_path)
+
+    if settings.obfuscate:
+        lines_str = obfuscate(lines_str)
+
+    writeOutputFiles(lines_str, f_path)
+
+
+def obfuscate(lines_str:str):
+    global obfuscated_data
+    global used_obfuscated_data
+    
+    # Sort from longest to shorest, to avoid string replacement issue
+    obfuscated_data = dict(sorted(obfuscated_data.items(), key=lambda item: (-len(item[0]), item[0])))
+    used_obfuscated_data = dict(sorted(used_obfuscated_data.items(), key=lambda item: (-len(item[0]), item[0])))
+
+    for data in obfuscated_data:
+        lines_str = lines_str.replace(data, obfuscated_data[data])
+
+    if settings.keep_unused_obfuscated_string:
+        writeFile('./obfuscated_data.json', json.dumps(obfuscated_data, indent=4), False)
+    else:
+        writeFile('./obfuscated_data.json', json.dumps(used_obfuscated_data, indent=4), False)
+
+    return lines_str
 
 
 def scoreToCommands(lines):
@@ -96,6 +120,13 @@ def scoreToCommands(lines):
                         line.text = token.command.format(temp[0], temp[1], temp[2])
                     elif len(temp) == 2:
                         line.text = token.command.format(temp[0], temp[1], '')
+                    
+                    # Obfuscate
+                    if settings.obfuscate:
+                        if obfuscated_data.get(temp[0]) == None:
+                            obfuscated_data[temp[0]] = ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(16))
+                        used_obfuscated_data[temp[0]] = obfuscated_data[temp[0]]
+
                     break
                 elif token.kind == 'SCORE-SET':
                     temp = line.text.replace('= ', '', 1)
@@ -249,24 +280,10 @@ def getFiles(dirPath):
     return completeFileList
 
 
-def writeOutputFiles(lines:Line, f_path:str):
+def writeOutputFiles(lines_str:str, f_path:str):
     # Write .mcfunction
     f_path = f_path.replace('.mcpy', '.mcfunction')
-    lines_list = ''
-    for line in lines:
-        lines_list += f'{line.parent}{line.text}\n'
-    
-    writeFile(f_path, lines_list)
-
-    # # Write obfuscation data
-    # if user_settings['keep_unused_obfuscated_string'] or not user_settings['obfuscate']:
-    #     text_to_w = json.dumps(obfuscated_str)
-    # else:
-    #     text_to_w = json.dumps(used_obfuscated_str)
-
-    # if user_settings['obfuscate']:
-    #     f_to_w = './obfuscated_data.json'
-    #     writeFile(f_to_w, text_to_w, False)
+    writeFile(f_path, lines_str)
 
 
 def deleteDist():
@@ -296,9 +313,11 @@ def isModified():
 
 
 if __name__ == '__main__':
-    settings = UserSettings()
     files_last_modified = []
+    settings_version = 0
 
+    # user_settings.json
+    settings = UserSettings()
     try:
         settings.load()
     except FileNotFoundError:
@@ -313,6 +332,13 @@ if __name__ == '__main__':
         files_path = getFiles(settings.base)
 
         if isModified():
+            # obfuscated_data.json
+            used_obfuscated_data = {}
+            try:
+                obfuscated_data = json.loads(readFile('./obfuscated_data.json'))
+            except FileNotFoundError:
+                obfuscated_data = {}
+
             deleteDist()
             for file in files_path:
                 main(file)
