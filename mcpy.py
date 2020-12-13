@@ -70,6 +70,7 @@ tokens = [
     Tokenizer(r'^.+\s-=\s.+$', 'SCORE-SUBTRACT-SELF', 'scoreboard players remove {} {} {}'),
     Tokenizer(r'^.+\s.+\s\:=\s.+$', 'SCORE-STORE', 'store result score {} {} run {}'),
     Tokenizer(r'^.+\s:=\s.+$', 'SCORE-STORE-SELF', 'store result score {} {} run {}'),
+    Tokenizer(r'^obf\s.+$', 'OBFUSCATE'),
     Tokenizer(r'^.+$', 'COMMAND'),
 ]
 
@@ -83,6 +84,7 @@ def main(f_path:str):
 
     for line in lines:
         lines_str += f'{line.parent}{line.text}\n'
+    lines_str = lines_str.replace('\n\n', '\n')
 
     if settings.obfuscate:
         lines_str = obfuscate(lines_str)
@@ -127,6 +129,17 @@ def scoreToCommands(lines):
                             obfuscated_data[temp[0]] = ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(16))
                         used_obfuscated_data[temp[0]] = obfuscated_data[temp[0]]
 
+                    break
+                elif token.kind == 'OBFUSCATE':
+                    temp = re.sub(r'^obf\s', '', line.text)
+                    temp = re.sub(r'\"|\'|', '', temp)
+                    # Obfuscate
+                    if settings.obfuscate:
+                        if obfuscated_data.get(temp) == None:
+                            obfuscated_data[temp] = ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(16))
+                        used_obfuscated_data[temp] = obfuscated_data[temp]
+                    line.text = ''
+                    line.parent = ''
                     break
                 elif token.kind == 'SCORE-SET':
                     temp = line.text.replace('= ', '', 1)
