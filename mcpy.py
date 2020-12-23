@@ -48,17 +48,19 @@ class Tokenizer:
 
 
 class Line:
-    def __init__(self:object, text:str, indent:int, no:int, parent='') -> None:
+    def __init__(self:object, text:str, indent:int, no:int, parent='', childs = []) -> None:
         super().__init__()
         self.text = text
         self.indent = indent
         self.no = no
         self.parent = parent
+        self.childs = childs
 
 
 tokens = [
     Tokenizer(r'^as\sat\s.+:$', 'ASAT'),
     Tokenizer(r'^else:$', 'ELSE'),
+    Tokenizer(r'^(if|unless).+matches\s\[.+(,\s.+)*,\s.+\]:$', 'MULTI-MATCH'),
     Tokenizer(r'^.+:$', 'EXECUTE'),
     Tokenizer(r'^score\s.+\s(.+|.+\s\".+\")$', 'SCORE-DEFINE', 'scoreboard objectives add {} {} {}'),
     Tokenizer(r'^score\s.+\s=\s.+$', 'SCORE-SET', 'scoreboard players set {} {} {}'),
@@ -220,13 +222,18 @@ def getParent(lines:list):
                     temp = line.text.replace('at ', '')
                     temp = temp[:-1]
                     line.text = f'{temp} at @s:'
+                elif token.kind == 'MULTI-MATCH':
+                    break
                 elif token.kind == 'EXECUTE' and current_indent < line.indent:
                     current_parents += [line.text[:-1]]
                     current_indent = line.indent
                     break
                 elif token.kind == 'EXECUTE' and current_indent >= line.indent:
                     current_parents = current_parents[:line.indent+1]
-                    current_parents[line.indent] = line.text[:-1]
+                    try:
+                        current_parents[line.indent] = line.text[:-1]
+                    except IndexError:
+                        current_parents += [line.text[:-1]]
                     current_indent = line.indent
                     break
                 elif token.kind == 'ELSE':
