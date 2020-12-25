@@ -9,7 +9,8 @@ import time
 
 class UserSettings:
     def __init__(self, watch_delay = 5, dist = './dist/', base = './',
-    tab_style = "    ", obfuscate = False, keep_unused_obfuscated_string = False) -> None:
+    tab_style = "    ", obfuscate = False, keep_unused_obfuscated_string = False,
+    keep_comment = False) -> None:
         super().__init__()
         self.watch_delay = watch_delay
         self.dist = dist
@@ -18,6 +19,7 @@ class UserSettings:
         self.obfuscate = obfuscate
         self.keep_unused_obfuscated_string = keep_unused_obfuscated_string
         self.settings_version = settings_version
+        self.keep_comment = keep_comment
     
 
     def load(self):
@@ -29,6 +31,7 @@ class UserSettings:
         self.obfuscate = f['obfuscate']
         self.keep_unused_obfuscated_string = f['keep_unused_obfuscated_string']
         self.settings_version = f['settings_version']
+        self.keep_comment = f['keep_comment']
     
 
     def generate(self, keep_old_settings = False):
@@ -246,8 +249,6 @@ def listToLines(lines:list):
         text = re.sub('\s\s\s\s|\t', '', line)
         indent = len(re.findall('\s\s\s\s|\t', line))
         no += 1
-        if re.match(r'^#|//.+$', text):
-            continue
         new_lines += [Line(text, indent, no)]
     return new_lines
 
@@ -263,7 +264,11 @@ def getParent(lines:list):
     for line in lines:
         for token in tokens:
             if re.match(token.pattern, line.text):
-                if token.kind == 'ASAT':
+                if token.kind == 'COMMENT':
+                    if settings.keep_comment and not settings.obfuscate:
+                        new_lines += [line]
+                    break
+                elif token.kind == 'ASAT':
                     temp = line.text.replace('at ', '')
                     temp = temp[:-1]
                     line.text = f'{temp} at @s:'
