@@ -167,7 +167,8 @@ def scoreToCommands(lines):
             if re.match(token.pattern, line.text):
                 if token.kind == 'SCORE-DEFINE':
                     temp = re.sub('^score ', '', line.text)
-                    temp = temp.split()
+                    temp = temp.split(maxsplit=2)
+
                     if len(temp) == 3:
                         line.text = token.command.format(temp[0], temp[1], temp[2])
                     elif len(temp) == 2:
