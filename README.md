@@ -6,7 +6,6 @@ An mcfunction compiler by using Python.
 ### Comment
 ```
 # This is a comment
-// This is also a comment
 ```
 *Note: Put a comment in it's own line*
 
@@ -117,7 +116,7 @@ var var_name = {'Dict': 'value', 'Dict_2': 'value_2'}
 ```
 Currently you can only define and set, no operation with it
 
-### Getting
+### Get Set variable
 - Int
     ```
     var var_name = 100
@@ -144,12 +143,12 @@ Currently you can only define and set, no operation with it
 
     Not currently supported
 
-### Operation
+### Variable Operation
 Not currently supported
 
 ## Obfuscation
 To generate a new obfuscation, delete `obfuscated_data.json`.
-### Variables
+### Scoreboards
 In the user_settings.json if `"obfuscate": true` then instead of the variable name it will generate a random 16 character string. You can name the variables as long as you want. This will remove the scoreboards' display name.
 
 If `"obfuscate": false` you are limited in naming your variables to 16 characters (Minecraft's scoreboard objective name limit).
@@ -175,7 +174,7 @@ The default is `./dist`. Dist location is in local. That means it cannot do `C:/
 The default is four spaces. Do use the proper tabbing otherwise the compiler will not compile mcpy to mcfunction correctly.
 
 ### Project base path
-The default is `./` (Where the mc.exe is). Any files that's inside a folder inside the project base will be generated in the dist path.
+The default is `./` (Where the mc.exe is). Any files that're inside the project base path will be generated in the dist path.
 
 ### Individual files
 The default is `false`. If you wish to set the files manualy, set `"individual_file"` to `true`. Then add the files inside `"files"` list. If `"individual_file": false` then it will compile all the files inside the project base path.
