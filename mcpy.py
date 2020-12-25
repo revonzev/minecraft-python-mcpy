@@ -58,6 +58,7 @@ class Line:
 
 
 tokens = [
+    Tokenizer(r'^#.+', 'COMMENT'),
     Tokenizer(r'^as\sat\s.+:$', 'ASAT'),
     Tokenizer(r'^else:$', 'ELSE'),
     Tokenizer(r'^(if|unless).+matches\s\[.+(,\s.+)*,\s.+\]:$', 'MULTI-MATCH'),
@@ -80,6 +81,7 @@ tokens = [
 def main(f_path:str):
     text = readFile(f_path)
     lines = listToLines(linesToList(text))
+    lines = mcpyMultiMatch(lines)
     lines = getParent(lines)
     lines = scoreToCommands(lines)
     lines_str = ''
@@ -93,6 +95,49 @@ def main(f_path:str):
 
     writeOutputFiles(lines_str, f_path)
 
+
+def mcpyMultiMatch(lines:list):
+    skip_count = 0
+    new_lines = []
+    for idx, line in enumerate(lines):
+        if skip_count == 0:
+            for token in tokens:
+                if re.match(token.pattern, line.text):
+                    if token.kind == 'MULTI-MATCH':
+                        line.childs = getChild(idx, lines)
+                        skip_count = len(line.childs) + 1
+
+                        base = re.sub(r'\[.+\]:$', '', line.text)
+                        values = re.sub(r'^(if|unless).+matches\s\[', '', line.text)
+                        values = re.sub(r'\]:$', '', values)
+                        values = values.split(r', ')
+
+                        # For nested multi match
+                        line.childs = mcpyMultiMatch(line.childs)
+                        
+                        for value in values:
+                            new_lines += [Line(base+value+':', line.indent, line.no, line.parent, line.childs)]
+                            for child in line.childs:
+                                new_lines += [child]
+                        break
+
+        if skip_count == 0:
+            new_lines += [line]
+        else:
+            skip_count -= 1
+
+    return new_lines
+
+
+def getChild(index:int, lines:list):
+    parent = lines[index]
+    childs = []
+    for idx, line in enumerate(lines):
+        if idx > index and line.indent > parent.indent:
+            childs += [line]
+        elif idx > index and line.indent <= parent.indent:
+            return childs
+    return childs
 
 def obfuscate(lines_str:str):
     global obfuscated_data
