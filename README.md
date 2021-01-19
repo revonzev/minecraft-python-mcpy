@@ -75,6 +75,11 @@ home @a = 10
 
 # scoreboard players set @a home 10
 ```
+```
+home = 10
+
+# scoreboard players set @s home 10
+```
 
 ### Add
 ```
@@ -82,12 +87,22 @@ home @a += 1
 
 # scoreboard players add @a home 1
 ```
+```
+home += 1
+
+# scoreboard players add @s home 1
+```
 
 ### Remove
 ```
 home @a -= 1
 
 # scoreboard players remove @a home 1
+```
+```
+home -= 1
+
+# scoreboard players remove @s home 1
 ```
 
 ### Operation
