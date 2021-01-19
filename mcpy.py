@@ -9,7 +9,7 @@ from loguru import logger
 
 
 class UserSettings:
-    def __init__(self, watch_delay = 5, dist = './dist/', base = './',
+    def __init__(self, watch_delay = 5, dist = './dist/', base = './mcpy/',
     tab_style = "    ", obfuscate = False, keep_unused_obfuscated_string = False,
     keep_comment = False) -> None:
         super().__init__()
@@ -68,8 +68,8 @@ tokens = [
     Tokenizer(r'^(if|unless).+matches\s\[.+(,\s.+)*,\s.+\]:$', 'MULTI-MATCH'),
     Tokenizer(r'^.+:$', 'EXECUTE'),
     Tokenizer(r'^score\s.+\s(.+|.+\s\".+\")$', 'SCORE-DEFINE', 'scoreboard objectives add {} {} {}'),
-    Tokenizer(r'^score\s.+\s=\s.+$', 'SCORE-SET', 'scoreboard players set {} {} {}'),
     Tokenizer(r'^.+\s.+\s(%|\*|\+|\-|\\|)(=|<|>|(><))\s.+\s.+$', 'SCORE-OPERATION', 'scoreboard players operation {} {} {} {} {}'),
+    Tokenizer(r'^.+\s.+\s=\s.+$', 'SCORE-SET', 'scoreboard players set {} {} {}'),
     Tokenizer(r'^.+\s=\s.+$', 'SCORE-SET-SELF', 'scoreboard players set {} {} {}'),
     Tokenizer(r'^.+\s.+\s\+=\s.+$', 'SCORE-ADD', 'scoreboard players add {} {} {}'),
     Tokenizer(r'^.+\s\+=\s.+$', 'SCORE-ADD-SELF', 'scoreboard players add {} {} {}'),
