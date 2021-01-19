@@ -5,6 +5,7 @@ import json
 import shutil
 import string
 import time
+from loguru import logger
 
 
 class UserSettings:
@@ -81,20 +82,40 @@ tokens = [
 ]
 
 
+@logger.catch
 def main(f_path:str):
+    logger.info(f'Reading {f_path}')
     text = readFile(f_path)
+    logger.success(f'Read {f_path}')
+
+    logger.info('Converting text to list')
     lines = listToLines(linesToList(text))
+    logger.success('Converted text to list')
+
+    logger.info('Compiling Mcpy multi match')
     lines = mcpyMultiMatch(lines)
+    logger.success('Compiled Mcpy multi match')
+
+    logger.info('Compiling Mcpy execute to Mcfunction execute')
     lines = getParent(lines)
+    logger.success('Compiled Mcpy execute to Mcfunction execute')
+
+    logger.info('Compiling Mcpy score ot Mcfunction scoreboard')
     lines = scoreToCommands(lines)
+    logger.success('Compiled Mcpy score ot Mcfunction scoreboard')
+
     lines_str = ''
 
+    logger.info('Converting list to text')
     for line in lines:
         lines_str += f'{line.parent}{line.text}\n'
     lines_str = lines_str.replace('\n\n', '\n')
+    logger.success('Converted list to text')
 
     if settings.obfuscate:
+        logger.info('Obfuscating...')
         lines_str = obfuscate(lines_str)
+        logger.success('Obfuscated')
 
     writeOutputFiles(lines_str, f_path)
 
@@ -108,12 +129,12 @@ def mcpyMultiMatch(lines:list):
                 if re.match(token.pattern, line.text):
                     if token.kind == 'MULTI-MATCH':
                         line.childs = getChild(idx, lines)
-                        skip_count = len(line.childs) + 1
+                        skip_count = len(line.childs) + 1 # Skip the real child
 
                         base = re.sub(r'\[.+\]:$', '', line.text)
                         values = re.sub(r'^(if|unless).+matches\s\[', '', line.text)
                         values = re.sub(r'\]:$', '', values)
-                        values = values.split(r', ')
+                        values = re.split(r',\s|,', values)
 
                         # For nested multi match
                         line.childs = mcpyMultiMatch(line.childs)
@@ -124,7 +145,7 @@ def mcpyMultiMatch(lines:list):
                                 new_lines += [child]
                         break
 
-        if skip_count == 0:
+        if skip_count == 0: # Not the or the child of a multi match? just add it
             new_lines += [line]
         else:
             skip_count -= 1
@@ -258,7 +279,7 @@ def linesToList(text:str):
     return text.split('\n')
 
 
-def getParent(lines:list):
+def getParent(lines:list): # TODO Rename this to some thing more suitable
     current_parents = []
     current_indent = -1
     new_lines = []
@@ -322,6 +343,7 @@ def writeFile(f_path:str, data:str, dist=True):
 
     generatePath(f_path)
 
+    logger.info(f'Writing output file {f_path}')
     with open(f_path, 'w') as file:
         file.write(data)
 
@@ -360,7 +382,9 @@ def writeOutputFiles(lines_str:str, f_path:str):
 def deleteDist():
     try:
         shutil.rmtree(settings.dist)
+        logger.success('Deleted dist folder')
     except FileNotFoundError:
+        logger.info('Dist folder not found')
         return
 
 
@@ -384,35 +408,62 @@ def isModified():
 
 
 if __name__ == '__main__':
+    logger.add('mcpy.log', mode='w')
+    logger.info('Made by Revon Zev')
+
     files_last_modified = []
     settings_version = 0
 
     # user_settings.json
     settings = UserSettings()
     try:
+        logger.success('user_settings.json loaded')
         settings.load()
     except FileNotFoundError:
+        logger.info('user_settings.json not found. Generating new user_settings.json')
         settings.generate()
     except KeyError:
+        logger.info('user_settings.json KeyError. Generating new user_settings.json')
         settings.generate(True)
     
     if settings.settings_version != settings_version:
+        logger.warning(f'user_settings.json version is old. current: {settings.settings_version}, latest: {settings_version}. Generating new user_settings.json')
+        logger.info('Old settings can be found at user_settings_old.json')
         settings.generate(True)
 
     while True:
-        files_path = getFiles(settings.base)
+        try:
+            files_path = getFiles(settings.base)
+        except FileNotFoundError:
+            os.mkdir(settings.base)
+            files_path = getFiles(settings.base)
 
-        if isModified():
+        skip_compile = False
+        if files_path == []:
+            logger.info('Project is empty. Compiling skipped')
+            skip_compile = True
+
+        if isModified() and not skip_compile:
+            logger.info('Compiling...')
+
             # obfuscated_data.json
             used_obfuscated_data = {}
             try:
                 obfuscated_data = json.loads(readFile('./obfuscated_data.json'))
+                logger.success('obfuscated_data.json loaded')
             except FileNotFoundError:
+                logger.info('obfuscated_data.json not found. Skipping')
                 obfuscated_data = {}
 
+            logger.info('Deleting dist path')
             deleteDist()
+
             for file in files_path:
+                logger.info(f'Generating {file}')
                 main(file)
+                logger.info(f'Generated {file}')
+            
+            logger.success('Compiled')
             
         if settings.watch_delay != 0:
             time.sleep(settings.watch_delay)
