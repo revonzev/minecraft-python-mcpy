@@ -72,44 +72,41 @@ score name dummy "Display"
 ### Set
 ```
 home @a = 10
-
-# scoreboard players set @a home 10
-```
-```
 home = 10
 
+# scoreboard players set @a home 10
 # scoreboard players set @s home 10
 ```
 
 ### Add
 ```
 home @a += 1
-
-# scoreboard players add @a home 1
-```
-```
 home += 1
 
+# scoreboard players add @a home 1
 # scoreboard players add @s home 1
 ```
 
 ### Remove
 ```
 home @a -= 1
+home @a -= 1
 
 # scoreboard players remove @a home 1
-```
-```
-home -= 1
-
 # scoreboard players remove @s home 1
 ```
 
 ### Operation
 ```
 home @a *= home @p
+home @a *= home
+home *= home @p
+home *= home
 
 # scoreboard players operation @a home *= @p home
+# scoreboard players operation @a home *= @s home
+# scoreboard players operation @s home *= @p home
+# scoreboard players operation @s home *= @s home
 # Operations: %=, *=, +=, -=, /=, <, >, =, ><
 ```
 

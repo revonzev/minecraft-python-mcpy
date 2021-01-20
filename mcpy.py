@@ -68,15 +68,15 @@ tokens = [
     Tokenizer(r'^(if|unless).+matches\s\[.+(,\s.+)*,\s.+\]:$', 'MULTI-MATCH'),
     Tokenizer(r'^.+:$', 'EXECUTE'),
     Tokenizer(r'^score\s.+\s(.+|.+\s\".+\")$', 'SCORE-DEFINE', 'scoreboard objectives add {} {} {}'),
-    Tokenizer(r'^.+\s.+\s(%|\*|\+|\-|\\|)(=|<|>|(><))\s.+\s.+$', 'SCORE-OPERATION', 'scoreboard players operation {} {} {} {} {}'),
-    Tokenizer(r'^.+\s.+\s=\s.+$', 'SCORE-SET', 'scoreboard players set {} {} {}'),
-    Tokenizer(r'^.+\s=\s.+$', 'SCORE-SET-SELF', 'scoreboard players set {} {} {}'),
-    Tokenizer(r'^.+\s.+\s\+=\s.+$', 'SCORE-ADD', 'scoreboard players add {} {} {}'),
-    Tokenizer(r'^.+\s\+=\s.+$', 'SCORE-ADD-SELF', 'scoreboard players add {} {} {}'),
-    Tokenizer(r'^.+\s.+\s\-=\s.+$', 'SCORE-SUBTRACT', 'scoreboard players remove {} {} {}'),
-    Tokenizer(r'^.+\s-=\s.+$', 'SCORE-SUBTRACT-SELF', 'scoreboard players remove {} {} {}'),
+    Tokenizer(r'^.+\s.+\s=\s\d+$', 'SCORE-SET', 'scoreboard players set {} {} {}'),
+    Tokenizer(r'^.+\s=\s\d+$', 'SCORE-SET-SELF', 'scoreboard players set {} {} {}'),
+    Tokenizer(r'^.+\s.+\s\+=\s\d+$', 'SCORE-ADD', 'scoreboard players add {} {} {}'),
+    Tokenizer(r'^.+\s\+=\s\d+$', 'SCORE-ADD-SELF', 'scoreboard players add {} {} {}'),
+    Tokenizer(r'^.+\s.+\s\-=\s\d+$', 'SCORE-SUBTRACT', 'scoreboard players remove {} {} {}'),
+    Tokenizer(r'^.+\s-=\s\d+$', 'SCORE-SUBTRACT-SELF', 'scoreboard players remove {} {} {}'),
     Tokenizer(r'^.+\s.+\s\:=\s.+$', 'SCORE-STORE', 'store result score {} {} run {}'),
     Tokenizer(r'^.+\s:=\s.+$', 'SCORE-STORE-SELF', 'store result score {} {} run {}'),
+    Tokenizer(r'^.+\s(%|\*|\+|\-|\\|)(=|<|>|(><))\s.+$', 'SCORE-OPERATION', 'scoreboard players operation {} {} {} {} {}'),
     Tokenizer(r'^obf\s.+$', 'OBFUSCATE'),
     Tokenizer(r'^.+$', 'COMMAND'),
 ]
@@ -245,8 +245,18 @@ def scoreToCommands(lines):
                     break
                 elif token.kind == 'SCORE-OPERATION':
                     temp = line.text.split()
-                    line.text = token.command.format(temp[1], temp[0], temp[2], temp[4], temp[3])
-                    break
+                    if re.match(r'.+\s.+\s(%|\*|\+|\-|\\|)(=|<|>|(><))\s.+\s.+', line.text):
+                        line.text = token.command.format(temp[1], temp[0], temp[2], temp[4], temp[3])
+                        break
+                    elif re.match(r'.+\s(%|\*|\+|\-|\\|)(=|<|>|(><))\s.+\s.+', line.text):
+                        line.text = token.command.format('@s', temp[0], temp[1], temp[3], temp[2])
+                        break
+                    elif re.match(r'.+\s.+\s(%|\*|\+|\-|\\|)(=|<|>|(><))\s.+', line.text):
+                        line.text = token.command.format(temp[1], temp[0], temp[2], '@s', temp[3])
+                        break
+                    elif re.match(r'.+\s(%|\*|\+|\-|\\|)(=|<|>|(><))\s.+', line.text):
+                        line.text = token.command.format('@s', temp[0], temp[1], '@s', temp[2])
+                        break
                 elif token.kind == 'SCORE-STORE':
                     temp = line.text.replace(':= ', '', 1)
                     temp = temp.split(maxsplit=2)
