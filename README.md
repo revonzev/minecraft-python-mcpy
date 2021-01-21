@@ -125,8 +125,9 @@ scoreboard players operation @s home *= @s home
 home @a := say Hello
 home := say Hello
 
-# execute store result score @a home run say Hello
-# execute store result score @s home run say Hello
+# Compile into
+execute store result score @a home run say Hello
+execute store result score @s home run say Hello
 ```
 
 ## Obfuscation
