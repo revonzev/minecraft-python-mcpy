@@ -6,7 +6,6 @@ An mcfunction compiler by using Python.
 ### Comment
 ```
 # This is a comment
-// This is also a comment
 ```
 *Note: Put a comment in it's own line*
 
@@ -60,7 +59,7 @@ in nether:
 # execute in nether if block ~ ~ ~ fire say Your burn is in a whole other dimensions
 ```
 
-## Variables
+## Scoreboards
 
 ### Defining
 ```
@@ -73,29 +72,41 @@ score name dummy "Display"
 ### Set
 ```
 home @a = 10
+home = 10
 
 # scoreboard players set @a home 10
+# scoreboard players set @s home 10
 ```
 
 ### Add
 ```
 home @a += 1
+home += 1
 
 # scoreboard players add @a home 1
+# scoreboard players add @s home 1
 ```
 
 ### Remove
 ```
 home @a -= 1
+home @a -= 1
 
 # scoreboard players remove @a home 1
+# scoreboard players remove @s home 1
 ```
 
 ### Operation
 ```
 home @a *= home @p
+home @a *= home
+home *= home @p
+home *= home
 
 # scoreboard players operation @a home *= @p home
+# scoreboard players operation @a home *= @s home
+# scoreboard players operation @s home *= @p home
+# scoreboard players operation @s home *= @s home
 # Operations: %=, *=, +=, -=, /=, <, >, =, ><
 ```
 
@@ -106,9 +117,50 @@ home @a := say Hello
 # execute store result score @a home run say Hello
 ```
 
+## Variables
+
+### Defining
+```
+var var_name = 0
+var var_name = 'String'
+var var_name = ['List', 'List']
+var var_name = {'Dict': 'value', 'Dict_2': 'value_2'}
+```
+Currently you can only define and set, no operation with it
+
+### Get Set variable
+- Int
+    ```
+    var var_name = 100
+    say var_name
+
+    # say 100
+    ```
+    Note: All matching string will be replaced with the variable value
+
+- String
+    ```
+    var var_name = 'I am a var'
+    say var_name
+
+    # say I am a var
+    ```
+    Note: All matching string will be replaced with the variable value
+
+- List
+
+    Not currently supported
+
+- Dict
+
+    Not currently supported
+
+### Variable Operation
+Not currently supported
+
 ## Obfuscation
 To generate a new obfuscation, delete `obfuscated_data.json`.
-### Variables
+### Scoreboards
 In the user_settings.json if `"obfuscate": true` then instead of the variable name it will generate a random 16 character string. You can name the variables as long as you want. This will remove the scoreboards' display name.
 
 If `"obfuscate": false` you are limited in naming your variables to 16 characters (Minecraft's scoreboard objective name limit).
@@ -134,7 +186,7 @@ The default is `./dist`. Dist location is in local. That means it cannot do `C:/
 The default is four spaces. Do use the proper tabbing otherwise the compiler will not compile mcpy to mcfunction correctly.
 
 ### Project base path
-The default is `./` (Where the mc.exe is). Any files that's inside a folder inside the project base will be generated in the dist path.
+The default is `./` (Where the mc.exe is). Any files that're inside the project base path will be generated in the dist path.
 
 ### Individual files
 The default is `false`. If you wish to set the files manualy, set `"individual_file"` to `true`. Then add the files inside `"files"` list. If `"individual_file": false` then it will compile all the files inside the project base path.

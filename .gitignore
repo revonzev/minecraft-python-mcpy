@@ -4,5 +4,8 @@ __pycache__
 build
 dist
 *.spec
+.vscode
 obfuscated_data.json
 user_settings.json
+user_settings_old.json
+*.log
