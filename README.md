@@ -20,7 +20,8 @@ as @a:
     at @s:
         say Hello World
 
-# execute as @a at @s run say Hello World
+# Compile into
+execute as @a at @s run say Hello World
 ```
 
 ### As
@@ -28,7 +29,8 @@ as @a:
 as @a:
     say Hello World
 
-# execute as @a run say Hello World
+# Compile into
+execute as @a run say Hello World
 ```
 
 ### At
@@ -36,7 +38,8 @@ as @a:
 at @a:
     say Hello World
 
-# execute at @a run say Hello World
+# Compile into
+execute at @a run say Hello World
 ```
 
 ### If matches x or x
@@ -44,9 +47,10 @@ at @a:
 unless score @a home matches [0, 2, 4]:
     say your score is 0 or 2 or 4
 
-# execute unless score @a home matches 0 say your score is 0 or 2 or 4
-# execute unless score @a home matches 2 say your score is 0 or 2 or 4
-# execute unless score @a home matches 4 say your score is 0 or 2 or 4
+# Compile into
+execute unless score @a home matches 0 say your score is 0 or 2 or 4
+execute unless score @a home matches 2 say your score is 0 or 2 or 4
+execute unless score @a home matches 4 say your score is 0 or 2 or 4
 ```
 
 ### Other part of execute
@@ -56,7 +60,8 @@ in nether:
     if block ~ ~ ~ fire:
         say Your burn is in a whole other dimensions
 
-# execute in nether if block ~ ~ ~ fire say Your burn is in a whole other dimensions
+# Compile into
+execute in nether if block ~ ~ ~ fire say Your burn is in a whole other dimensions
 ```
 
 ## Scoreboards
@@ -65,8 +70,8 @@ in nether:
 ```
 score name dummy "Display"
 
-# scoreboard objectives add score dummy "Display"
-# DO NOT DO: var score dummy "Display" = 10
+# Compile into
+scoreboard objectives add score dummy "Display"
 ```
 
 ### Set
@@ -74,8 +79,9 @@ score name dummy "Display"
 home @a = 10
 home = 10
 
-# scoreboard players set @a home 10
-# scoreboard players set @s home 10
+# Compile into
+scoreboard players set @a home 10
+scoreboard players set @s home 10
 ```
 
 ### Add
@@ -83,17 +89,19 @@ home = 10
 home @a += 1
 home += 1
 
-# scoreboard players add @a home 1
-# scoreboard players add @s home 1
+# Compile into
+scoreboard players add @a home 1
+scoreboard players add @s home 1
 ```
 
 ### Remove
 ```
 home @a -= 1
-home @a -= 1
+home -= 1
 
-# scoreboard players remove @a home 1
-# scoreboard players remove @s home 1
+# Compile into
+scoreboard players remove @a home 1
+scoreboard players remove @s home 1
 ```
 
 ### Operation
@@ -103,60 +111,23 @@ home @a *= home
 home *= home @p
 home *= home
 
-# scoreboard players operation @a home *= @p home
-# scoreboard players operation @a home *= @s home
-# scoreboard players operation @s home *= @p home
-# scoreboard players operation @s home *= @s home
+# Compile into
+scoreboard players operation @a home *= @p home
+scoreboard players operation @a home *= @s home
+scoreboard players operation @s home *= @p home
+scoreboard players operation @s home *= @s home
+
 # Operations: %=, *=, +=, -=, /=, <, >, =, ><
 ```
 
 ### Store command result
 ```
 home @a := say Hello
+home := say Hello
 
 # execute store result score @a home run say Hello
+# execute store result score @s home run say Hello
 ```
-
-## Variables
-
-### Defining
-```
-var var_name = 0
-var var_name = 'String'
-var var_name = ['List', 'List']
-var var_name = {'Dict': 'value', 'Dict_2': 'value_2'}
-```
-Currently you can only define and set, no operation with it
-
-### Get Set variable
-- Int
-    ```
-    var var_name = 100
-    say var_name
-
-    # say 100
-    ```
-    Note: All matching string will be replaced with the variable value
-
-- String
-    ```
-    var var_name = 'I am a var'
-    say var_name
-
-    # say I am a var
-    ```
-    Note: All matching string will be replaced with the variable value
-
-- List
-
-    Not currently supported
-
-- Dict
-
-    Not currently supported
-
-### Variable Operation
-Not currently supported
 
 ## Obfuscation
 To generate a new obfuscation, delete `obfuscated_data.json`.
@@ -171,7 +142,7 @@ To obfuscate a tag or string use
 obf tag_name
 ```
 
-*Note: Any string that matches it will be obfuscated*
+*Note: Any string that matches it, will be obfuscated*
 
 ## User Settings
 The file is `user_settings.json`
