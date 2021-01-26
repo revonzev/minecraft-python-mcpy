@@ -122,8 +122,6 @@ def main(f_path:str):
     writeOutputFiles(lines_str, f_path)
 
 
-user_functions = {}
-
 def precompile(lines:list):
     global user_functions
     skip_count = 0
@@ -148,9 +146,8 @@ def precompile(lines:list):
                             new_lines += [Line(base+value+':', line.indent, line.no, line.parent, line.childs)]
                             for child in line.childs:
                                 new_lines += [child]
-                        break
 
-                    if token.kind == 'DEFINE-FUNCTION':
+                    elif token.kind == 'DEFINE-FUNCTION':
                         line.childs = getChild(idx, lines)
                         skip_count = len(line.childs) + 1 # Skip the real child
                         
@@ -166,28 +163,23 @@ def precompile(lines:list):
                         line.text = re.sub('^def ', '', line.text)
                         line.text = re.sub(r'\((.+|)\):$', '', line.text)
                         user_functions[line.text] = {'args': args, 'childs': line.childs}
-
-                        break
                     
-                    if token.kind == 'CALL-FUNCTION':
+                    elif token.kind == 'CALL-FUNCTION':
                         for function in user_functions.keys():
-                            skip_count = 1
+                            skip_count = 1 # Skip the current line
                             arg = re.sub(r'^.+\(', '', line.text)
                             arg = re.sub(r'\)$', '', arg)
                             args = re.split(r',\s|,', arg)
 
-                            if re.match(function, line.text+'('):
+                            if re.match(function+r'\(', line.text):
                                 new_child = []
                                 for child in user_functions[function]['childs']:
-                                    new_child = Line(child.text, child.indent, child.no, child.parent, child.childs)
+                                    new_child = Line(child.text, child.indent+line.indent, child.no, child.parent, child.childs)
                                     for i in range(len(args)):
                                         if args[i] == '':
                                             args[i] = user_functions[function]['args'][i]
                                         new_child.text = new_child.text.replace(user_functions[function]['args'][i], args[i])
-                                        print(new_child.text)
                                     new_lines += [new_child]
-                            
-                            break
 
         if skip_count == 0: # Not the or the child of a multi match? just add it
             new_lines += [line]
@@ -499,6 +491,7 @@ if __name__ == '__main__':
 
         if isModified() and not skip_compile:
             logger.info('Compiling...')
+            user_functions = {}
 
             # obfuscated_data.json
             used_obfuscated_data = {}
