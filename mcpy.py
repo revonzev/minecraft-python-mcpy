@@ -167,10 +167,11 @@ def precompile(lines:list):
                     elif token.kind == 'CALL-FUNCTION':
                         for function in user_functions.keys():
                             skip_count = 1 # Skip the current line
+                            # Get arguments from string
                             args_str = re.sub(r'^.+\(', '', line.text)
                             args_str = re.sub(r'\)$', '', args_str)
-                            args_found = re.findall(r'(?:"|\')(.*?)(?:"|\')', args_str)
-                            args_str = re.sub(r'(?:"|\')(.*?)(?:"|\')', 'SKIP', args_str)
+                            args_found = re.findall(r'(?:(?<![\\])[\'\"])(.*?)(?:(?<![\\])[\'\"])', args_str)
+                            args_str = re.sub(r'(?:(?<![\\])[\'\"])(.*?)(?:(?<![\\])[\'\"])', 'SKIP', args_str)
                             args_splited = re.split(r',\s|,', args_str)
                             current_arg_skip_idx = 0
                             args = []
@@ -181,6 +182,11 @@ def precompile(lines:list):
                                     current_arg_skip_idx += 1
                                 else:
                                     args += [arg]
+
+                            # Escape quote to normal quote
+                            for i in range(len(args)):
+                                args[i] = args[i].replace('\\\"', '"')
+                                args[i] = args[i].replace('\\\'', "'")
 
                             if re.match(function+r'\(', line.text):
                                 new_child = []
