@@ -20,7 +20,7 @@ as @a:
     at @s:
         say Hello World
 
-# Compile into
+# Compile into:
 execute as @a at @s run say Hello World
 ```
 
@@ -29,7 +29,7 @@ execute as @a at @s run say Hello World
 as @a:
     say Hello World
 
-# Compile into
+# Compile into:
 execute as @a run say Hello World
 ```
 
@@ -47,7 +47,7 @@ execute at @a run say Hello World
 unless score @a home matches [0, 2, 4]:
     say your score is 0 or 2 or 4
 
-# Compile into
+# Compile into:
 execute unless score @a home matches 0 say your score is 0 or 2 or 4
 execute unless score @a home matches 2 say your score is 0 or 2 or 4
 execute unless score @a home matches 4 say your score is 0 or 2 or 4
@@ -60,7 +60,7 @@ in nether:
     if block ~ ~ ~ fire:
         say Your burn is in a whole other dimensions
 
-# Compile into
+# Compile into:
 execute in nether if block ~ ~ ~ fire say Your burn is in a whole other dimensions
 ```
 
@@ -79,7 +79,7 @@ scoreboard objectives add score dummy "Display"
 home @a = 10
 home = 10
 
-# Compile into
+# Compile into:
 scoreboard players set @a home 10
 scoreboard players set @s home 10
 ```
@@ -89,7 +89,7 @@ scoreboard players set @s home 10
 home @a += 1
 home += 1
 
-# Compile into
+# Compile into:
 scoreboard players add @a home 1
 scoreboard players add @s home 1
 ```
@@ -99,7 +99,7 @@ scoreboard players add @s home 1
 home @a -= 1
 home -= 1
 
-# Compile into
+# Compile into:
 scoreboard players remove @a home 1
 scoreboard players remove @s home 1
 ```
@@ -111,12 +111,11 @@ home @a *= home
 home *= home @p
 home *= home
 
-# Compile into
+# Compile into:
 scoreboard players operation @a home *= @p home
 scoreboard players operation @a home *= @s home
 scoreboard players operation @s home *= @p home
 scoreboard players operation @s home *= @s home
-
 # Operations: %=, *=, +=, -=, /=, <, >, =, ><
 ```
 
@@ -125,9 +124,24 @@ scoreboard players operation @s home *= @s home
 home @a := say Hello
 home := say Hello
 
-# Compile into
-execute store result score @a home run say Hello
-execute store result score @s home run say Hello
+# execute store result score @a home run say Hello
+```
+
+## Functions
+### Define function
+```
+def print($msg):
+    say $msg
+```
+
+### Call function
+```
+print("Hi")
+print("\"Hello\"")
+
+# Compile into:
+say Hi
+say "Hello"
 ```
 
 ## Obfuscation

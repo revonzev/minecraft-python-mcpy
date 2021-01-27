@@ -63,6 +63,8 @@ class Line:
 
 tokens = [
     Tokenizer(r'^#.+', 'COMMENT'),
+    Tokenizer(r'^def\s.+\((.+|)\):$', 'DEFINE-FUNCTION'),
+    Tokenizer(r'^.+\((.+|)\)$', 'CALL-FUNCTION'),
     Tokenizer(r'^as\sat\s.+:$', 'ASAT'),
     Tokenizer(r'^else:$', 'ELSE'),
     Tokenizer(r'^(if|unless).+matches\s\[.+(,\s.+)*,\s.+\]:$', 'MULTI-MATCH'),
@@ -91,10 +93,10 @@ def main(f_path:str):
     logger.info('Converting text to list')
     lines = listToLines(linesToList(text))
     logger.success('Converted text to list')
-
-    logger.info('Compiling Mcpy multi match')
-    lines = mcpyMultiMatch(lines)
-    logger.success('Compiled Mcpy multi match')
+    
+    logger.info('Precompiling')
+    lines = precompile(lines)
+    logger.success('Precompiling finished')
 
     logger.info('Compiling Mcpy execute to Mcfunction execute')
     lines = getParent(lines)
@@ -120,7 +122,8 @@ def main(f_path:str):
     writeOutputFiles(lines_str, f_path)
 
 
-def mcpyMultiMatch(lines:list):
+def precompile(lines:list):
+    global user_functions
     skip_count = 0
     new_lines = []
     for idx, line in enumerate(lines):
@@ -137,13 +140,63 @@ def mcpyMultiMatch(lines:list):
                         values = re.split(r',\s|,', values)
 
                         # For nested multi match
-                        line.childs = mcpyMultiMatch(line.childs)
+                        line.childs = precompile(line.childs)
                         
                         for value in values:
                             new_lines += [Line(base+value+':', line.indent, line.no, line.parent, line.childs)]
                             for child in line.childs:
                                 new_lines += [child]
-                        break
+
+                    elif token.kind == 'DEFINE-FUNCTION':
+                        line.childs = getChild(idx, lines)
+                        skip_count = len(line.childs) + 1 # Skip the real child
+                        
+                        for child in line.childs:
+                            child.indent = child.indent - 1
+                        
+                        line.childs = precompile(line.childs)
+
+                        # Get function name and arguments
+                        arg = re.sub(r'^def\s.+\(', '', line.text)
+                        arg = re.sub(r'\):$', '', arg)
+                        args = re.split(r',\s|,', arg)
+                        line.text = re.sub('^def ', '', line.text)
+                        line.text = re.sub(r'\((.+|)\):$', '', line.text)
+                        user_functions[line.text] = {'args': args, 'childs': line.childs}
+                    
+                    elif token.kind == 'CALL-FUNCTION':
+                        for function in user_functions.keys():
+                            skip_count = 1 # Skip the current line
+                            # Get arguments from string
+                            args_str = re.sub(r'^.+\(', '', line.text)
+                            args_str = re.sub(r'\)$', '', args_str)
+                            args_found = re.findall(r'(?:(?<![\\])[\'\"])(.*?)(?:(?<![\\])[\'\"])', args_str)
+                            args_str = re.sub(r'(?:(?<![\\])[\'\"])(.*?)(?:(?<![\\])[\'\"])', 'SKIP', args_str)
+                            args_splited = re.split(r',\s|,', args_str)
+                            current_arg_skip_idx = 0
+                            args = []
+
+                            for arg in args_splited:
+                                if arg == 'SKIP':
+                                    args += [args_found[current_arg_skip_idx]]
+                                    current_arg_skip_idx += 1
+                                else:
+                                    args += [arg]
+
+                            # Escape quote to normal quote
+                            for i in range(len(args)):
+                                args[i] = args[i].replace('\\\"', '"')
+                                args[i] = args[i].replace('\\\'', "'")
+
+                            if re.match(function+r'\(', line.text):
+                                new_child = []
+                                for child in user_functions[function]['childs']:
+                                    new_child = Line(child.text, child.indent+line.indent, child.no, child.parent, child.childs)
+                                    for i in range(len(args)):
+                                        if args[i] == '':
+                                            args[i] = user_functions[function]['args'][i]
+                                        new_child.text = new_child.text.replace(user_functions[function]['args'][i], args[i])
+                                    new_lines += [new_child]
 
         if skip_count == 0: # Not the or the child of a multi match? just add it
             new_lines += [line]
@@ -455,6 +508,7 @@ if __name__ == '__main__':
 
         if isModified() and not skip_compile:
             logger.info('Compiling...')
+            user_functions = {}
 
             # obfuscated_data.json
             used_obfuscated_data = {}
