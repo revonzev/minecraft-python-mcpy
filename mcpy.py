@@ -167,9 +167,20 @@ def precompile(lines:list):
                     elif token.kind == 'CALL-FUNCTION':
                         for function in user_functions.keys():
                             skip_count = 1 # Skip the current line
-                            arg = re.sub(r'^.+\(', '', line.text)
-                            arg = re.sub(r'\)$', '', arg)
-                            args = re.split(r',\s|,', arg)
+                            args_str = re.sub(r'^.+\(', '', line.text)
+                            args_str = re.sub(r'\)$', '', args_str)
+                            args_found = re.findall(r'(?:"|\')(.*?)(?:"|\')', args_str)
+                            args_str = re.sub(r'(?:"|\')(.*?)(?:"|\')', 'SKIP', args_str)
+                            args_splited = re.split(r',\s|,', args_str)
+                            current_arg_skip_idx = 0
+                            args = []
+
+                            for arg in args_splited:
+                                if arg == 'SKIP':
+                                    args += [args_found[current_arg_skip_idx]]
+                                    current_arg_skip_idx += 1
+                                else:
+                                    args += [arg]
 
                             if re.match(function+r'\(', line.text):
                                 new_child = []
