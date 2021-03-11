@@ -164,7 +164,7 @@ def precompile(lines:list):
                         line.text = re.sub(r'\((.+|)\):$', '', line.text)
                         user_functions[line.text] = {'args': args, 'childs': line.childs}
                     
-                    elif token.kind == 'CALL-FUNCTION':
+                    elif token.kind == 'CALL-FUNCTION' and not re.match('^\$', line.text):
                         for function in user_functions.keys():
                             skip_count = 1 # Skip the current line
                             # Get arguments from string
@@ -197,6 +197,8 @@ def precompile(lines:list):
                                             args[i] = user_functions[function]['args'][i]
                                         new_child.text = new_child.text.replace(user_functions[function]['args'][i], args[i])
                                     new_lines += [new_child]
+
+                            new_lines = precompile(new_lines)
 
         if skip_count == 0: # Not the or the child of a multi match? just add it
             new_lines += [line]
