@@ -122,6 +122,7 @@ scoreboard players operation @s home *= @s home
 ### Store command result
 ```
 home @a := say Hello
+home := say Hello
 
 # execute store result score @a home run say Hello
 ```
@@ -156,7 +157,7 @@ To obfuscate a tag or string use
 obf tag_name
 ```
 
-*Note: Any string that matches it will be obfuscated*
+*Note: Any string that matches it, will be obfuscated*
 
 ## User Settings
 The file is `user_settings.json`
