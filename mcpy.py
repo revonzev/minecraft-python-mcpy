@@ -70,6 +70,7 @@ tokens = [
     Tokenizer(r'^(if|unless).+matches\s\[.+(,\s.+)*,\s.+\]:$', 'MULTI-MATCH'),
     Tokenizer(r'^.+:$', 'EXECUTE'),
     Tokenizer(r'^score\s.+\s(.+|.+\s\".+\")$', 'SCORE-DEFINE', 'scoreboard objectives add {} {} {}'),
+    Tokenizer(r'^reset\s.+$', 'SCORE-RESET', 'scoreboard players {}'),
     Tokenizer(r'^.+\s.+\s=\s(-|)\d+$', 'SCORE-SET', 'scoreboard players set {} {} {}'),
     Tokenizer(r'^.+\s=\s(-|)\d+$', 'SCORE-SET-SELF', 'scoreboard players set {} {} {}'),
     Tokenizer(r'^.+\s.+\s\+=\s\d+$', 'SCORE-ADD', 'scoreboard players add {} {} {}'),
@@ -267,6 +268,9 @@ def scoreToCommands(lines):
                         used_obfuscated_data[temp] = obfuscated_data[temp]
                     line.text = ''
                     line.parent = ''
+                    break
+                elif token.kind == 'SCORE-RESET':
+                    line.text = token.command.format(line.text)
                     break
                 elif token.kind == 'SCORE-SET':
                     temp = line.text.replace('= ', '', 1)
