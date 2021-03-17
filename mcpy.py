@@ -67,6 +67,7 @@ tokens = [
     Tokenizer(r'^.+\((.+|)\)$', 'CALL-FUNCTION'),
     Tokenizer(r'^as\sat\s.+:$', 'ASAT'),
     Tokenizer(r'^else:$', 'ELSE'),
+    Tokenizer(r'^for\s.+\sin\s.+:$', 'FOR-IN'),
     Tokenizer(r'^(if|unless).+matches\s\[.+(,\s.+)*,\s.+\]:$', 'MULTI-MATCH'),
     Tokenizer(r'^.+:$', 'EXECUTE'),
     Tokenizer(r'^score\s.+\s(.+|.+\s\".+\")$', 'SCORE-DEFINE', 'scoreboard objectives add {} {} {}'),
@@ -131,7 +132,28 @@ def precompile(lines:list):
         if skip_count == 0:
             for token in tokens:
                 if re.match(token.pattern, line.text):
+                    if token.kind == 'FOR-IN':
+                        line.childs = getChild(idx, lines)
+                        skip_count = len(line.childs) + 1 # Skip the real child
+
+                        base = re.sub(r'\[.+\]:$', '', line.text)
+                        variable = base.replace('for ', '')
+                        variable = variable.replace(' in ', '')
+                        values = re.sub(r'^for\s.+\sin\s\[', '', line.text)
+                        values = re.sub(r'\]:$', '', values)
+                        values = re.split(r',\s|,', values)
+                        
+                        # For nested for
+                        line.childs = precompile(line.childs)
+                        
+                        for value in values:
+                            for child in line.childs:
+                                new_lines += [Line(child.text.replace(variable, value), child.indent-1, line.no, line.parent, line.childs)]
+
+                    # TODO Remove when refactoring
                     if token.kind == 'MULTI-MATCH':
+                        logger.warning('Multi-Match is deprecated')
+
                         line.childs = getChild(idx, lines)
                         skip_count = len(line.childs) + 1 # Skip the real child
 
