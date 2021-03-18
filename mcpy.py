@@ -11,7 +11,7 @@ from loguru import logger
 class UserSettings:
     def __init__(self, watch_delay = 5, dist = './dist/', base = './mcpy/',
     tab_style = "    ", obfuscate = False, keep_unused_obfuscated_string = False,
-    keep_comment = False) -> None:
+    keep_comment = False, auto_obfuscate = False) -> None:
         super().__init__()
         self.watch_delay = watch_delay
         self.dist = dist
@@ -21,6 +21,7 @@ class UserSettings:
         self.keep_unused_obfuscated_string = keep_unused_obfuscated_string
         self.settings_version = settings_version
         self.keep_comment = keep_comment
+        self.auto_obfuscate = auto_obfuscate
     
 
     def load(self):
@@ -33,6 +34,7 @@ class UserSettings:
         self.keep_unused_obfuscated_string = f['keep_unused_obfuscated_string']
         self.settings_version = f['settings_version']
         self.keep_comment = f['keep_comment']
+        self.auto_obfuscate = f['auto_obfuscate']
     
 
     def generate(self, keep_old_settings = False):
@@ -274,7 +276,7 @@ def scoreToCommands(lines):
                         line.text = token.command.format(temp[0], temp[1], '')
                     
                     # Obfuscate
-                    if settings.obfuscate:
+                    if settings.obfuscate and settings.auto_obfuscate:
                         if obfuscated_data.get(temp[0]) == None:
                             obfuscated_data[temp[0]] = ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(16))
                         used_obfuscated_data[temp[0]] = obfuscated_data[temp[0]]
@@ -503,7 +505,7 @@ if __name__ == '__main__':
     logger.info('Made by Revon Zev')
 
     files_last_modified = []
-    settings_version = 0
+    settings_version = 1
 
     # user_settings.json
     settings = UserSettings()
