@@ -69,6 +69,7 @@ tokens = [
     Tokenizer(r'^.+\((.+|)\)$', 'CALL-FUNCTION'),
     Tokenizer(r'^as\sat\s.+:$', 'ASAT'),
     Tokenizer(r'^else:$', 'ELSE'),
+    Tokenizer(r'^for\s.+\sin\srange\(\d+,(\s|)\d+\):', 'FOR-IN-RANGE'),
     Tokenizer(r'^for\s.+\sin\s.+:$', 'FOR-IN'),
     Tokenizer(r'^(if|unless).+matches\s\[.+(,\s.+)*,\s.+\]:$', 'MULTI-MATCH'),
     Tokenizer(r'^.+:$', 'EXECUTE'),
@@ -134,6 +135,14 @@ def precompile(lines:list):
         if skip_count == 0:
             for token in tokens:
                 if re.match(token.pattern, line.text):
+                    if token.kind == 'FOR-IN-RANGE':
+                        temp = []
+                        text = re.sub('^for\s.+\sin\srange\(', '', line.text)
+                        text = re.sub('\):$', '', text)
+                        values = re.split(r',\s|,', text)
+                        for i in range(int(values[0]), int(values[1])):
+                            temp += [str(i)]
+                        line.text = line.text.replace('range('+text+')', '['+','.join(temp)+']')
                     if token.kind == 'FOR-IN':
                         line.childs = getChild(idx, lines)
                         skip_count = len(line.childs) + 1 # Skip the real child
@@ -154,7 +163,7 @@ def precompile(lines:list):
 
                     # TODO Remove when refactoring
                     if token.kind == 'MULTI-MATCH':
-                        logger.warning('Multi-Match is deprecated')
+                        logger.warning('Multi-Match is deprecated - '+str(line.no)+': '+line.text)
 
                         line.childs = getChild(idx, lines)
                         skip_count = len(line.childs) + 1 # Skip the real child
