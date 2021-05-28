@@ -11,30 +11,32 @@ from loguru import logger
 class UserSettings:
     def __init__(self, watch_delay = 5, dist = './dist/', base = './mcpy/',
     tab_style = "    ", obfuscate = False, keep_unused_obfuscated_string = False,
-    keep_comment = False, auto_obfuscate = False) -> None:
+    keep_comment = False, auto_obfuscate = False, file_for_globals = True) -> None:
         super().__init__()
+        self.settings_version = settings_version
         self.watch_delay = watch_delay
         self.dist = dist
         self.base = base
         self.tab_style = tab_style
         self.obfuscate = obfuscate
         self.keep_unused_obfuscated_string = keep_unused_obfuscated_string
-        self.settings_version = settings_version
         self.keep_comment = keep_comment
         self.auto_obfuscate = auto_obfuscate
+        self.file_for_globals = file_for_globals
     
 
     def load(self):
         f = json.loads(readFile('./user_settings.json'))
+        self.settings_version = f['settings_version']
         self.watch_delay = f['watch_delay']
         self.dist = f['dist']
         self.base = f['base']
         self.tab_style = f['tab_style']
         self.obfuscate = f['obfuscate']
         self.keep_unused_obfuscated_string = f['keep_unused_obfuscated_string']
-        self.settings_version = f['settings_version']
         self.keep_comment = f['keep_comment']
         self.auto_obfuscate = f['auto_obfuscate']
+        self.file_for_globals = f['file_for_globals']
     
 
     def generate(self, keep_old_settings = False):
@@ -102,6 +104,9 @@ def main(f_path:str):
     logger.info('Precompiling')
     lines = precompile(lines)
     logger.success('Precompiling finished')
+
+    if f_path == './globals.mcpy':
+        return 0
 
     logger.info('Compiling Mcpy execute to Mcfunction execute')
     lines = getParent(lines)
@@ -514,7 +519,7 @@ if __name__ == '__main__':
     logger.info('Made by Revon Zev')
 
     files_last_modified = []
-    settings_version = 1
+    settings_version = 2
 
     # user_settings.json
     settings = UserSettings()
@@ -533,12 +538,22 @@ if __name__ == '__main__':
         logger.info('Old settings can be found at user_settings_old.json')
         settings.generate(True)
 
+    if settings.file_for_globals == True:
+        try:
+            readFile('./globals.mcpy')
+        except FileNotFoundError:
+            writeFile('./globals.mcpy', "# For your \"global\" MCPY functions.\n# It is recommended to put them here if they are used in multiple files.\n# Currently, all MCPY functions are global.", False)
+
+
     while True:
         try:
             files_path = getFiles(settings.base)
         except FileNotFoundError:
             os.mkdir(settings.base)
             files_path = getFiles(settings.base)
+        
+        if settings.file_for_globals == True:
+            files_path.insert(0, './globals.mcpy')
 
         skip_compile = False
         if files_path == []:
