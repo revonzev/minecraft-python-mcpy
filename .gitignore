@@ -1,12 +1,19 @@
-*.code-workspace
+# Python
 __pycache__
+
+# VSCode
+.vscode
+*.code-workspace
+
+# MCPY
 *.mcpy
 build
 dist
-*.spec
-.vscode
-*.exe
 obfuscated_data.json
 user_settings.json
 user_settings_old.json
 *.log
+
+# Others
+*.spec
+*.exe
