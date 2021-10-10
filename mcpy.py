@@ -9,9 +9,9 @@ from loguru import logger
 
 
 class UserSettings:
-    def __init__(self, watch_delay = 5, dist = './dist/', base = './mcpy/',
-    tab_style = "    ", obfuscate = False, keep_unused_obfuscated_string = False,
-    keep_comment = False, auto_obfuscate = False, file_for_globals = True) -> None:
+    def __init__(self, watch_delay=5, dist='./dist/', base='./mcpy/',
+                 tab_style="    ", obfuscate=False, keep_unused_obfuscated_string=False,
+                 keep_comment=False, auto_obfuscate=False, file_for_globals=True) -> None:
         super().__init__()
         self.settings_version = settings_version
         self.watch_delay = watch_delay
@@ -23,7 +23,6 @@ class UserSettings:
         self.keep_comment = keep_comment
         self.auto_obfuscate = auto_obfuscate
         self.file_for_globals = file_for_globals
-    
 
     def load(self):
         f = json.loads(readFile('./user_settings.json'))
@@ -37,18 +36,19 @@ class UserSettings:
         self.keep_comment = f['keep_comment']
         self.auto_obfuscate = f['auto_obfuscate']
         self.file_for_globals = f['file_for_globals']
-    
 
-    def generate(self, keep_old_settings = False):
+    def generate(self, keep_old_settings=False):
         if keep_old_settings:
             f = json.loads(readFile('./user_settings.json'))
-            writeFile('./user_settings_old.json', json.dumps(f, indent=4), False)
+            writeFile('./user_settings_old.json',
+                      json.dumps(f, indent=4), False)
         self.settings_version = settings_version
-        writeFile('./user_settings.json', json.dumps(self.__dict__, indent=4), False)
+        writeFile('./user_settings.json',
+                  json.dumps(self.__dict__, indent=4), False)
 
 
 class Tokenizer:
-    def __init__(self:object, pattern:str, kind:str, command='') -> None:
+    def __init__(self: object, pattern: str, kind: str, command='') -> None:
         super().__init__()
         self.pattern = pattern
         self.command = command
@@ -56,7 +56,7 @@ class Tokenizer:
 
 
 class Line:
-    def __init__(self:object, text:str, indent:int, no:int, parent='', childs = []) -> None:
+    def __init__(self: object, text: str, indent: int, no: int, parent='', childs=[]) -> None:
         super().__init__()
         self.text = text
         self.indent = indent
@@ -75,24 +75,34 @@ tokens = [
     Tokenizer(r'^for\s.+\sin\s.+:$', 'FOR-IN'),
     Tokenizer(r'^(if|unless).+matches\s\[.+(,\s.+)*,\s.+\]:$', 'MULTI-MATCH'),
     Tokenizer(r'^.+:$', 'EXECUTE'),
-    Tokenizer(r'^score\s.+\s(.+|.+\s\".+\")$', 'SCORE-DEFINE', 'scoreboard objectives add {} {} {}'),
+    Tokenizer(r'^score\s.+\s(.+|.+\s\".+\")$', 'SCORE-DEFINE',
+              'scoreboard objectives add {} {} {}'),
     Tokenizer(r'^reset\s.+$', 'SCORE-RESET', 'scoreboard players {}'),
-    Tokenizer(r'^.+\s.+\s=\s(-|)\d+$', 'SCORE-SET', 'scoreboard players set {} {} {}'),
-    Tokenizer(r'^.+\s=\s(-|)\d+$', 'SCORE-SET-SELF', 'scoreboard players set {} {} {}'),
-    Tokenizer(r'^.+\s.+\s\+=\s\d+$', 'SCORE-ADD', 'scoreboard players add {} {} {}'),
-    Tokenizer(r'^.+\s\+=\s\d+$', 'SCORE-ADD-SELF', 'scoreboard players add {} {} {}'),
-    Tokenizer(r'^.+\s.+\s\-=\s\d+$', 'SCORE-SUBTRACT', 'scoreboard players remove {} {} {}'),
-    Tokenizer(r'^.+\s-=\s\d+$', 'SCORE-SUBTRACT-SELF', 'scoreboard players remove {} {} {}'),
-    Tokenizer(r'^.+\s.+\s\:=\s.+$', 'SCORE-STORE', 'store result score {} {} run {}'),
-    Tokenizer(r'^.+\s:=\s.+$', 'SCORE-STORE-SELF', 'store result score {} {} run {}'),
-    Tokenizer(r'^.+\s(%|\*|\+|\-|\\|)(=|<|>|(><))\s.+$', 'SCORE-OPERATION', 'scoreboard players operation {} {} {} {} {}'),
+    Tokenizer(r'^.+\s.+\s=\s(-|)\d+$', 'SCORE-SET',
+              'scoreboard players set {} {} {}'),
+    Tokenizer(r'^.+\s=\s(-|)\d+$', 'SCORE-SET-SELF',
+              'scoreboard players set {} {} {}'),
+    Tokenizer(r'^.+\s.+\s\+=\s\d+$', 'SCORE-ADD',
+              'scoreboard players add {} {} {}'),
+    Tokenizer(r'^.+\s\+=\s\d+$', 'SCORE-ADD-SELF',
+              'scoreboard players add {} {} {}'),
+    Tokenizer(r'^.+\s.+\s\-=\s\d+$', 'SCORE-SUBTRACT',
+              'scoreboard players remove {} {} {}'),
+    Tokenizer(r'^.+\s-=\s\d+$', 'SCORE-SUBTRACT-SELF',
+              'scoreboard players remove {} {} {}'),
+    Tokenizer(r'^.+\s.+\s\:=\s.+$', 'SCORE-STORE',
+              'store result score {} {} run {}'),
+    Tokenizer(r'^.+\s:=\s.+$', 'SCORE-STORE-SELF',
+              'store result score {} {} run {}'),
+    Tokenizer(r'^.+\s(%|\*|\+|\-|\\|)(=|<|>|(><))\s.+$',
+              'SCORE-OPERATION', 'scoreboard players operation {} {} {} {} {}'),
     Tokenizer(r'^obf\s.+$', 'OBFUSCATE'),
     Tokenizer(r'^.+$', 'COMMAND'),
 ]
 
 
 @logger.catch
-def main(f_path:str):
+def main(f_path: str):
     logger.info(f'Reading {f_path}')
     text = readFile(f_path)
     logger.success(f'Read {f_path}')
@@ -100,7 +110,7 @@ def main(f_path:str):
     logger.info('Converting text to list')
     lines = listToLines(linesToList(text))
     logger.success('Converted text to list')
-    
+
     logger.info('Precompiling')
     lines = precompile(lines)
     logger.success('Precompiling finished')
@@ -132,7 +142,7 @@ def main(f_path:str):
     writeOutputFiles(lines_str, f_path)
 
 
-def precompile(lines:list):
+def precompile(lines: list):
     global user_functions
     skip_count = 0
     new_lines = []
@@ -147,10 +157,12 @@ def precompile(lines:list):
                         values = re.split(r',\s|,', text)
                         for i in range(int(values[0]), int(values[1])):
                             temp += [str(i)]
-                        line.text = line.text.replace('range('+text+')', '['+','.join(temp)+']')
+                        line.text = line.text.replace(
+                            'range('+text+')', '['+','.join(temp)+']')
                     if token.kind == 'FOR-IN':
                         line.childs = getChild(idx, lines)
-                        skip_count = len(line.childs) + 1 # Skip the real child
+                        skip_count = len(line.childs) + \
+                            1  # Skip the real child
 
                         base = re.sub(r'\[.+\]:$', '', line.text)
                         variable = base.replace('for ', '')
@@ -158,41 +170,47 @@ def precompile(lines:list):
                         values = re.sub(r'^for\s.+\sin\s\[', '', line.text)
                         values = re.sub(r'\]:$', '', values)
                         values = re.split(r',\s|,', values)
-                        
+
                         # For nested for
                         line.childs = precompile(line.childs)
-                        
+
                         for value in values:
                             for child in line.childs:
-                                new_lines += [Line(child.text.replace(variable, value), child.indent-1, line.no, line.parent, line.childs)]
+                                new_lines += [Line(child.text.replace(variable, value),
+                                                   child.indent-1, line.no, line.parent, line.childs)]
 
                     # TODO Remove when refactoring
                     if token.kind == 'MULTI-MATCH':
-                        logger.warning('Multi-Match is deprecated - '+str(line.no)+': '+line.text)
+                        logger.warning(
+                            'Multi-Match is deprecated - '+str(line.no)+': '+line.text)
 
                         line.childs = getChild(idx, lines)
-                        skip_count = len(line.childs) + 1 # Skip the real child
+                        skip_count = len(line.childs) + \
+                            1  # Skip the real child
 
                         base = re.sub(r'\[.+\]:$', '', line.text)
-                        values = re.sub(r'^(if|unless).+matches\s\[', '', line.text)
+                        values = re.sub(
+                            r'^(if|unless).+matches\s\[', '', line.text)
                         values = re.sub(r'\]:$', '', values)
                         values = re.split(r',\s|,', values)
 
                         # For nested multi match
                         line.childs = precompile(line.childs)
-                        
+
                         for value in values:
-                            new_lines += [Line(base+value+':', line.indent, line.no, line.parent, line.childs)]
+                            new_lines += [Line(base+value+':', line.indent,
+                                               line.no, line.parent, line.childs)]
                             for child in line.childs:
                                 new_lines += [child]
 
                     elif token.kind == 'DEFINE-FUNCTION':
                         line.childs = getChild(idx, lines)
-                        skip_count = len(line.childs) + 1 # Skip the real child
-                        
+                        skip_count = len(line.childs) + \
+                            1  # Skip the real child
+
                         for child in line.childs:
                             child.indent = child.indent - 1
-                        
+
                         line.childs = precompile(line.childs)
 
                         # Get function name and arguments
@@ -201,16 +219,19 @@ def precompile(lines:list):
                         args = re.split(r',\s|,', arg)
                         line.text = re.sub('^def ', '', line.text)
                         line.text = re.sub(r'\((.+|)\):$', '', line.text)
-                        user_functions[line.text] = {'args': args, 'childs': line.childs}
-                    
+                        user_functions[line.text] = {
+                            'args': args, 'childs': line.childs}
+
                     elif token.kind == 'CALL-FUNCTION' and not re.match('^\$', line.text):
                         for function in user_functions.keys():
-                            skip_count = 1 # Skip the current line
+                            skip_count = 1  # Skip the current line
                             # Get arguments from string
                             args_str = re.sub(r'^.+\(', '', line.text)
                             args_str = re.sub(r'\)$', '', args_str)
-                            args_found = re.findall(r'(?:(?<![\\])[\'\"])(.*?)(?:(?<![\\])[\'\"])', args_str)
-                            args_str = re.sub(r'(?:(?<![\\])[\'\"])(.*?)(?:(?<![\\])[\'\"])', 'SKIP', args_str)
+                            args_found = re.findall(
+                                r'(?:(?<![\\])[\'\"])(.*?)(?:(?<![\\])[\'\"])', args_str)
+                            args_str = re.sub(
+                                r'(?:(?<![\\])[\'\"])(.*?)(?:(?<![\\])[\'\"])', 'SKIP', args_str)
                             args_splited = re.split(r',\s|,', args_str)
                             current_arg_skip_idx = 0
                             args = []
@@ -230,16 +251,18 @@ def precompile(lines:list):
                             if re.match(function+r'\(', line.text):
                                 new_child = []
                                 for child in user_functions[function]['childs']:
-                                    new_child = Line(child.text, child.indent+line.indent, child.no, child.parent, child.childs)
+                                    new_child = Line(
+                                        child.text, child.indent+line.indent, child.no, child.parent, child.childs)
                                     for i in range(len(args)):
                                         if args[i] == '':
                                             args[i] = user_functions[function]['args'][i]
-                                        new_child.text = new_child.text.replace(user_functions[function]['args'][i], args[i])
+                                        new_child.text = new_child.text.replace(
+                                            user_functions[function]['args'][i], args[i])
                                     new_lines += [new_child]
 
                             new_lines = precompile(new_lines)
 
-        if skip_count == 0: # Not the or the child of a multi match? just add it
+        if skip_count == 0:  # Not the or the child of a multi match? just add it
             new_lines += [line]
         else:
             skip_count -= 1
@@ -247,7 +270,7 @@ def precompile(lines:list):
     return new_lines
 
 
-def getChild(index:int, lines:list):
+def getChild(index: int, lines: list):
     parent = lines[index]
     childs = []
     for idx, line in enumerate(lines):
@@ -257,21 +280,26 @@ def getChild(index:int, lines:list):
             return childs
     return childs
 
-def obfuscate(lines_str:str):
+
+def obfuscate(lines_str: str):
     global obfuscated_data
     global used_obfuscated_data
-    
+
     # Sort from longest to shorest, to avoid string replacement issue
-    obfuscated_data = dict(sorted(obfuscated_data.items(), key=lambda item: (-len(item[0]), item[0])))
-    used_obfuscated_data = dict(sorted(used_obfuscated_data.items(), key=lambda item: (-len(item[0]), item[0])))
+    obfuscated_data = dict(
+        sorted(obfuscated_data.items(), key=lambda item: (-len(item[0]), item[0])))
+    used_obfuscated_data = dict(
+        sorted(used_obfuscated_data.items(), key=lambda item: (-len(item[0]), item[0])))
 
     for data in obfuscated_data:
         lines_str = lines_str.replace(data, obfuscated_data[data])
 
     if settings.keep_unused_obfuscated_string:
-        writeFile('./obfuscated_data.json', json.dumps(obfuscated_data, indent=4), False)
+        writeFile('./obfuscated_data.json',
+                  json.dumps(obfuscated_data, indent=4), False)
     else:
-        writeFile('./obfuscated_data.json', json.dumps(used_obfuscated_data, indent=4), False)
+        writeFile('./obfuscated_data.json',
+                  json.dumps(used_obfuscated_data, indent=4), False)
 
     return lines_str
 
@@ -285,15 +313,18 @@ def scoreToCommands(lines):
                     temp = temp.split(maxsplit=2)
 
                     if len(temp) == 3:
-                        line.text = token.command.format(temp[0], temp[1], temp[2])
+                        line.text = token.command.format(
+                            temp[0], temp[1], temp[2])
                     elif len(temp) == 2:
                         line.text = token.command.format(temp[0], temp[1], '')
-                    
+
                     # Obfuscate
                     if settings.obfuscate and settings.auto_obfuscate:
                         if obfuscated_data.get(temp[0]) == None:
-                            obfuscated_data[temp[0]] = ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(16))
-                        used_obfuscated_data[temp[0]] = obfuscated_data[temp[0]]
+                            obfuscated_data[temp[0]] = ''.join(random.SystemRandom().choice(
+                                string.ascii_letters + string.digits) for _ in range(16))
+                        used_obfuscated_data[temp[0]
+                                             ] = obfuscated_data[temp[0]]
 
                     break
                 elif token.kind == 'OBFUSCATE':
@@ -302,7 +333,8 @@ def scoreToCommands(lines):
                     # Obfuscate
                     if settings.obfuscate:
                         if obfuscated_data.get(temp) == None:
-                            obfuscated_data[temp] = ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(16))
+                            obfuscated_data[temp] = ''.join(random.SystemRandom().choice(
+                                string.ascii_letters + string.digits) for _ in range(16))
                         used_obfuscated_data[temp] = obfuscated_data[temp]
                     line.text = ''
                     line.parent = ''
@@ -343,16 +375,20 @@ def scoreToCommands(lines):
                 elif token.kind == 'SCORE-OPERATION':
                     temp = line.text.split()
                     if re.match(r'.+\s.+\s(%|\*|\+|\-|\\|)(=|<|>|(><))\s.+\s.+', line.text):
-                        line.text = token.command.format(temp[1], temp[0], temp[2], temp[4], temp[3])
+                        line.text = token.command.format(
+                            temp[1], temp[0], temp[2], temp[4], temp[3])
                         break
                     elif re.match(r'.+\s(%|\*|\+|\-|\\|)(=|<|>|(><))\s.+\s.+', line.text):
-                        line.text = token.command.format('@s', temp[0], temp[1], temp[3], temp[2])
+                        line.text = token.command.format(
+                            '@s', temp[0], temp[1], temp[3], temp[2])
                         break
                     elif re.match(r'.+\s.+\s(%|\*|\+|\-|\\|)(=|<|>|(><))\s.+', line.text):
-                        line.text = token.command.format(temp[1], temp[0], temp[2], '@s', temp[3])
+                        line.text = token.command.format(
+                            temp[1], temp[0], temp[2], '@s', temp[3])
                         break
                     elif re.match(r'.+\s(%|\*|\+|\-|\\|)(=|<|>|(><))\s.+', line.text):
-                        line.text = token.command.format('@s', temp[0], temp[1], '@s', temp[2])
+                        line.text = token.command.format(
+                            '@s', temp[0], temp[1], '@s', temp[2])
                         break
                 elif token.kind == 'SCORE-STORE':
                     temp = line.text.replace(':= ', '', 1)
@@ -371,7 +407,7 @@ def scoreToCommands(lines):
     return lines
 
 
-def listToLines(lines:list):
+def listToLines(lines: list):
     new_lines = []
     no = 0
     for line in lines:
@@ -382,11 +418,11 @@ def listToLines(lines:list):
     return new_lines
 
 
-def linesToList(text:str):
+def linesToList(text: str):
     return text.split('\n')
 
 
-def getParent(lines:list): # TODO Rename this to some thing more suitable
+def getParent(lines: list):  # TODO Rename this to some thing more suitable
     current_parents = []
     current_indent = -1
     new_lines = []
@@ -416,9 +452,11 @@ def getParent(lines:list): # TODO Rename this to some thing more suitable
                     current_indent = line.indent
                     break
                 elif token.kind == 'ELSE':
-                    temp = re.sub(r'^if', 'kecvd', current_parents[line.indent])
+                    temp = re.sub(r'^if', 'kecvd',
+                                  current_parents[line.indent])
                     temp = re.sub(r'^unless', 'if', temp)
-                    current_parents[line.indent] = re.sub(r'^kecvd', 'unless', temp)
+                    current_parents[line.indent] = re.sub(
+                        r'^kecvd', 'unless', temp)
                     break
                 else:
                     current_parents = current_parents[:line.indent]
@@ -428,19 +466,20 @@ def getParent(lines:list): # TODO Rename this to some thing more suitable
                         break
                     else:
                         current_indent = line.indent
-                        new_lines += [Line(line.text, line.indent, line.no, 'execute '+' '.join(current_parents)+' run ')]
+                        new_lines += [Line(line.text, line.indent, line.no,
+                                           'execute '+' '.join(current_parents)+' run ')]
                         break
 
     return new_lines
 
 
-def readFile(f_path:str):
+def readFile(f_path: str):
     with open(f_path, 'r') as file:
         file_inner = file.read()
     return file_inner
 
 
-def writeFile(f_path:str, data:str, dist=True):
+def writeFile(f_path: str, data: str, dist=True):
     if dist == True:
         f_path = f_path.replace(settings.base, '')
         f_path = f_path.replace('./', '')
@@ -455,7 +494,7 @@ def writeFile(f_path:str, data:str, dist=True):
         file.write(data)
 
 
-def generatePath(f_path:str):
+def generatePath(f_path: str):
     f_path = f_path.replace(os.path.basename(f_path), '').replace('./', '')
     f_path = re.split(r'/|\\', f_path)
     current_path = './'
@@ -480,7 +519,7 @@ def getFiles(dirPath):
     return completeFileList
 
 
-def writeOutputFiles(lines_str:str, f_path:str):
+def writeOutputFiles(lines_str: str, f_path: str):
     # Write .mcfunction
     f_path = f_path.replace('.mcpy', '.mcfunction')
     writeFile(f_path, lines_str)
@@ -502,12 +541,12 @@ def isModified():
 
     if files_last_modified == []:
         for f_path in files_path:
-            files_last_modified  += [os.stat(f_path).st_mtime]
+            files_last_modified += [os.stat(f_path).st_mtime]
         hasModified = True
     else:
         for f_path in files_path:
             files_newly_modified += [os.stat(f_path).st_mtime]
-        
+
         hasModified = files_last_modified != files_newly_modified
         files_last_modified = files_newly_modified
 
@@ -527,14 +566,17 @@ if __name__ == '__main__':
         logger.success('user_settings.json loaded')
         settings.load()
     except FileNotFoundError:
-        logger.info('user_settings.json not found. Generating new user_settings.json')
+        logger.info(
+            'user_settings.json not found. Generating new user_settings.json')
         settings.generate()
     except KeyError:
-        logger.info('user_settings.json KeyError. Generating new user_settings.json')
+        logger.info(
+            'user_settings.json KeyError. Generating new user_settings.json')
         settings.generate(True)
-    
+
     if settings.settings_version != settings_version:
-        logger.warning(f'user_settings.json version is old. current: {settings.settings_version}, latest: {settings_version}. Generating new user_settings.json')
+        logger.warning(
+            f'user_settings.json version is old. current: {settings.settings_version}, latest: {settings_version}. Generating new user_settings.json')
         logger.info('Old settings can be found at user_settings_old.json')
         settings.generate(True)
 
@@ -544,14 +586,13 @@ if __name__ == '__main__':
         except FileNotFoundError:
             writeFile('./globals.mcpy', "# For your \"global\" MCPY functions.\n# It is recommended to put them here if they are used in multiple files.\n# Currently, all MCPY functions are global.", False)
 
-
     while True:
         try:
             files_path = getFiles(settings.base)
         except FileNotFoundError:
             os.mkdir(settings.base)
             files_path = getFiles(settings.base)
-        
+
         if settings.file_for_globals == True:
             files_path.insert(0, './globals.mcpy')
 
@@ -567,7 +608,8 @@ if __name__ == '__main__':
             # obfuscated_data.json
             used_obfuscated_data = {}
             try:
-                obfuscated_data = json.loads(readFile('./obfuscated_data.json'))
+                obfuscated_data = json.loads(
+                    readFile('./obfuscated_data.json'))
                 logger.success('obfuscated_data.json loaded')
             except FileNotFoundError:
                 logger.info('obfuscated_data.json not found. Skipping')
@@ -580,9 +622,9 @@ if __name__ == '__main__':
                 logger.info(f'Generating {file}')
                 main(file)
                 logger.info(f'Generated {file}')
-            
+
             logger.success('Compiled')
-            
+
         if settings.watch_delay != 0:
             time.sleep(settings.watch_delay)
         else:
