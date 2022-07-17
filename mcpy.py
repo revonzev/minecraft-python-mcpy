@@ -82,7 +82,7 @@ def get_files(dir_path: str = settings['base']) -> list:
     return complete_file_list
 
 
-def has_files_modified():
+def has_files_modified() -> bool:
     global files_last_modified
     files_newly_modified: list = []
     has_modified: bool = False
@@ -101,11 +101,11 @@ def has_files_modified():
     return has_modified
 
 
-def newline_to_list(text):
+def newline_to_list(text) -> list:
     return text.split('\n')
 
 
-def text_to_lines(file_path: str):
+def text_to_lines(file_path: str) -> list:
     data: list = []
 
     with open(file_path) as f:
@@ -117,7 +117,7 @@ def text_to_lines(file_path: str):
     return data
 
 
-def compile(file_path: str):
+def compile(file_path: str) -> None:
     lines: list = text_to_lines(file_path)
 
     # print(f'\n\n\n{file_path}')
