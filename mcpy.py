@@ -2,6 +2,7 @@ import json
 import os
 from queue import Empty
 import re
+import shutil
 import time
 
 
@@ -117,6 +118,13 @@ def text_to_lines(file_path: str) -> list:
     return data
 
 
+def deleteDist() -> None:
+    try:
+        shutil.rmtree(settings['dist'])
+    except FileNotFoundError:
+        return
+
+
 def compile(file_path: str) -> None:
     lines: list = text_to_lines(file_path)
 
@@ -151,6 +159,9 @@ if __name__ == '__main__':
         # Skip compilation if base folder is empty
         if mcpy_file_paths == []:
             continue
+
+        # Delete the dist folder
+        deleteDist()
 
         if has_files_modified():
             for file_path in mcpy_file_paths:
