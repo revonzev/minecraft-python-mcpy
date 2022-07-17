@@ -7,7 +7,7 @@ import time
 
 
 settings_version: int = 2
-files_last_modified: list = []
+files_last_modified: list[str] = []
 settings: dict = {
     'settings_version': settings_version,
     'watch_delay': 5,
@@ -25,11 +25,12 @@ settings: dict = {
 class Line():
     def __init__(self, text: str) -> None:
         self._indent: int = self._set_indent(text)
-        self._type: str = 'text'
+        # type: COMMAND, COMMENT, EoC (End of Command), EMPTY, EoF
+        self._type: list[str] = []
         self._text: str = self._remove_indent(text)
         self._code: str = ''
         self._parent: Line = Empty
-        self._children: list = []
+        self._children: list[Line] = []
 
     def _set_indent(self, text: str) -> int:
         return len(re.findall(settings['tab_style'], text))
@@ -46,7 +47,7 @@ class Line():
     def add_children(self, child: object) -> None:
         self._children.append(child)
 
-    def get_children(self) -> list:
+    def get_children(self) -> list[object]:
         return self._children
 
     def set_parent(self, parent: object) -> None:
@@ -61,17 +62,20 @@ class Line():
     def get_code(self) -> str:
         return self._code
 
-    def set_type(self, type: str) -> None:
+    def set_type(self, type: list[str]) -> None:
         self._type = type
+
+    def add_type(self, type: str) -> None:
+        self._type.append(type)
 
     def get_type(self) -> str:
         return self._type
 
 
 # From https://appdividend.com/2020/01/20/python-list-of-files-in-directory-and-subdirectories/
-def get_files(dir_path: str = settings['base']) -> list:
-    list_of_file: list = os.listdir(dir_path)
-    complete_file_list: list = []
+def get_files(dir_path: str = settings['base']) -> list[str]:
+    list_of_file: list[str] = os.listdir(dir_path)
+    complete_file_list: list[str] = []
 
     for file in list_of_file:
         completePath: str = os.path.join(dir_path, file)
@@ -85,7 +89,7 @@ def get_files(dir_path: str = settings['base']) -> list:
 
 def has_files_modified() -> bool:
     global files_last_modified
-    files_newly_modified: list = []
+    files_newly_modified: list[str] = []
     has_modified: bool = False
 
     if files_last_modified == []:
@@ -102,15 +106,15 @@ def has_files_modified() -> bool:
     return has_modified
 
 
-def newline_to_list(text) -> list:
-    return text.split('\n')
+def newline_to_list(text: str) -> list[str]:
+    return text.splitlines()
 
 
-def text_to_lines(file_path: str) -> list:
-    data: list = []
+def text_to_lines(file_path: str) -> list[Line]:
+    data: list[Line] = []
 
     with open(file_path) as f:
-        lines = newline_to_list(f.read())
+        lines: list[str] = newline_to_list(f.read())
 
     for line in lines:
         data.append(Line(line))
@@ -125,12 +129,45 @@ def deleteDist() -> None:
         return
 
 
-def compile(file_path: str) -> None:
-    lines: list = text_to_lines(file_path)
+def is_mcf_comment(text: str) -> bool:
+    return re.search(r'^(?:\s*|\t*)#.+', text)
 
-    # print(f'\n\n\n{file_path}')
-    # for line in lines:
-    #     print(line.get_text())
+
+def is_mcf_empty(text: str) -> bool:
+    return re.search(r'^(\s*|\t*)$', text)
+
+
+def is_mcf_EoC(text: str) -> bool:
+    return not re.search(r':(?:\s*|\t*)$', text)
+
+
+def set_lines_type(lines: list[Line]) -> list[Line]:
+    for line in lines:
+        if lines[-1] == line:
+            line.add_type('EoF')
+
+        if is_mcf_comment(line.get_text()):
+            line.add_type('COMMENT')
+            continue
+        elif is_mcf_empty(line.get_text()):
+            line.add_type('EMPTY')
+            continue
+        else:
+            line.add_type('COMMAND')
+
+        if is_mcf_EoC(line.get_text()):
+            line.add_type('EoC')
+
+    return lines
+
+
+def compile(file_path: str) -> None:
+    lines: list[str] = text_to_lines(file_path)
+    lines = set_lines_type(lines)
+
+    print(f'\n\n\n{file_path}')
+    for line in lines:
+        print(f'{line.get_type()}: {line.get_text()}')
 
 
 if __name__ == '__main__':
@@ -150,7 +187,7 @@ if __name__ == '__main__':
     while True:
         # Delay between compilation
         if settings['watch_delay'] == 0:
-            input('Press enter to compile mcpy')
+            input('Press enter to compile mcpy files')
         else:
             time.sleep(settings['watch_delay'])
 
