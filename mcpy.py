@@ -25,7 +25,8 @@ settings: dict = {
 class Line():
     def __init__(self, text: str) -> None:
         self._indent: int = self._set_indent(text)
-        # type: COMMAND, COMMENT, EoC (End of Command), EMPTY, EoF
+        # type: COMMAND, COMMENT, SoC (Start of Command), EoC (End of Command),
+        #       EMPTY, EoF (End of File)
         self._type: list[str] = []
         self._text: str = self._remove_indent(text)
         self._code: str = ''
@@ -141,7 +142,12 @@ def is_mcf_EoC(text: str) -> bool:
     return not re.search(r':(?:\s*|\t*)$', text)
 
 
+def is_mcf_SoC(text: str, indent: int, current_indent: int = 0) -> bool:
+    return indent == current_indent and re.search(r':(?:\s*|\t*)$', text)
+
+
 def set_lines_type(lines: list[Line]) -> list[Line]:
+    current_indent: int = 0
     for line in lines:
         if lines[-1] == line:
             line.add_type('EoF')
@@ -155,7 +161,9 @@ def set_lines_type(lines: list[Line]) -> list[Line]:
         else:
             line.add_type('COMMAND')
 
-        if is_mcf_EoC(line.get_text()):
+        if is_mcf_SoC(line.get_text(), line.get_indent(), current_indent):
+            line.add_type('SoC')
+        elif is_mcf_EoC(line.get_text()):
             line.add_type('EoC')
 
     return lines
