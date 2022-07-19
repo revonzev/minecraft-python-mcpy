@@ -123,6 +123,13 @@ def text_to_lines(file_path: str) -> list[Line]:
     return data
 
 
+def lines_to_text(lines: list['Line']) -> str:
+    text: str = ''
+    for line in lines:
+        text += line.get_code() + '\n'
+    return text
+
+
 def delete_dist() -> None:
     try:
         shutil.rmtree(settings['dist'])
@@ -144,6 +151,30 @@ def is_mcf_EoC(text: str) -> bool:
 
 def is_mcf_SoC(text: str, indent: int, current_indent: int = 0) -> bool:
     return indent == current_indent and re.search(r':(?:\s*|\t*)$', text)
+
+
+def write_output_files(text: str, file_path: str):
+    file_path = file_path.replace('.mcpy', '.mcfunction')
+
+    file_path = file_path.replace(settings['base'], '')
+    file_path = file_path.replace('./', '')
+    file_path = ''.join(settings['dist']+file_path)
+
+    create_folder_path(file_path)
+
+    with open(file_path, 'w') as file:
+        file.write(text)
+
+
+def create_folder_path(f_path: str):
+    f_path = f_path.replace(os.path.basename(f_path), '').replace('./', '')
+    f_path = re.split(r'/|\\', f_path)
+    current_path = './'
+    for i in f_path:
+        if i != '':
+            current_path += i + '/'
+            if not os.path.exists(current_path):
+                os.mkdir(current_path)
 
 
 def set_lines_type(lines: list[Line]) -> list[Line]:
@@ -177,6 +208,10 @@ def compile(file_path: str) -> None:
     print(f'\n\n\n{file_path}')
     for line in lines:
         print(f'{line.get_type()}: {line.get_text()}')
+
+    text: str = lines_to_text(lines)  # TODO
+
+    write_output_files(text, file_path)
 
 
 if __name__ == '__main__':
