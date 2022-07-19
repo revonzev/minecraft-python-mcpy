@@ -123,7 +123,7 @@ def text_to_lines(file_path: str) -> list[Line]:
     return data
 
 
-def deleteDist() -> None:
+def delete_dist() -> None:
     try:
         shutil.rmtree(settings['dist'])
     except FileNotFoundError:
@@ -148,6 +148,7 @@ def is_mcf_SoC(text: str, indent: int, current_indent: int = 0) -> bool:
 
 def set_lines_type(lines: list[Line]) -> list[Line]:
     current_indent: int = 0
+
     for line in lines:
         if lines[-1] == line:
             line.add_type('EoF')
@@ -205,9 +206,8 @@ if __name__ == '__main__':
         if mcpy_file_paths == []:
             continue
 
-        # Delete the dist folder
-        deleteDist()
-
         if has_files_modified():
+            delete_dist()
+
             for file_path in mcpy_file_paths:
                 compile(file_path)
