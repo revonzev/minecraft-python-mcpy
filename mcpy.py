@@ -45,6 +45,9 @@ class Line():
     def get_text(self) -> str:
         return self._text
 
+    def set_children(self, children: list[object]) -> None:
+        self._children = children
+
     def add_children(self, child: object) -> None:
         self._children.append(child)
 
@@ -126,7 +129,11 @@ def text_to_lines(file_path: str) -> list[Line]:
 def lines_to_text(lines: list['Line']) -> str:
     text: str = ''
     for line in lines:
-        text += line.get_code() + '\n'
+        if line.get_children() != []:
+            lines_to_text(line.get_children())
+        else:
+            text += line.get_code() + '\n'
+
     return text
 
 
@@ -207,13 +214,43 @@ def set_lines_type(lines: list[Line]) -> list[Line]:
     return lines
 
 
+def print_lines_tree(lines: list[Line], tabs: str = ""):
+    for line in lines:
+        print(tabs + "- " + line.get_text())
+
+        if line.get_children() != []:
+            print_lines_tree(line.get_children(), tabs + "  ")
+
+
+def set_lines_children(lines: list[Line]) -> list[Line]:
+    new_lines: list[Line] = []
+
+    for line in lines:
+        if line.get_parent() == Empty:
+            current_indent: int = 0
+        else:
+            current_indent: int = line.get_parent().get_indent() + 1
+
+        if line.get_indent() == current_indent:
+            new_lines.append(line)
+        elif line.get_indent() > current_indent:
+            line.set_parent(new_lines[-1])
+            new_lines[-1].add_children(line)
+
+    for line in new_lines:
+        if line.get_children() != []:
+            line.set_children(set_lines_children(line.get_children()))
+
+    return new_lines
+
+
 def compile(file_path: str) -> None:
     lines: list[str] = text_to_lines(file_path)
     lines = set_lines_type(lines)
+    lines = set_lines_children(lines)
 
     print(f'\n\n\n{file_path}')
-    for line in lines:
-        print(f'{line.get_type()}: {line.get_text()}')
+    print_lines_tree(lines)
 
     text: str = lines_to_text(lines)  # TODO
 
