@@ -26,7 +26,7 @@ class Line():
     def __init__(self, text: str) -> None:
         self._indent: int = self._set_indent(text)
         # type: COMMAND, COMMENT, SoC (Start of Command), EoC (End of Command),
-        #       EMPTY, EoF (End of File)
+        #       EMPTY, EoF (End of File), CoC (Continuation of Command)
         self._type: list[str] = []
         self._text: str = self._remove_indent(text)
         self._code: str = ''
@@ -146,11 +146,15 @@ def is_mcf_empty(text: str) -> bool:
 
 
 def is_mcf_EoC(text: str) -> bool:
-    return not re.search(r':(?:\s*|\t*)$', text)
+    return not is_mcf_CoC(text)
 
 
 def is_mcf_SoC(text: str, indent: int, current_indent: int = 0) -> bool:
-    return indent == current_indent and re.search(r':(?:\s*|\t*)$', text)
+    return indent == current_indent and is_mcf_CoC(text)
+
+
+def is_mcf_CoC(text: str):
+    return re.search(r':(?:\s*|\t*)$', text)
 
 
 def write_output_files(text: str, file_path: str):
@@ -195,6 +199,8 @@ def set_lines_type(lines: list[Line]) -> list[Line]:
 
         if is_mcf_SoC(line.get_text(), line.get_indent(), current_indent):
             line.add_type('SoC')
+        elif is_mcf_CoC(line.get_text()):
+            line.add_type('CoC')
         elif is_mcf_EoC(line.get_text()):
             line.add_type('EoC')
 
