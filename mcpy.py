@@ -69,7 +69,7 @@ class Line():
     def add_type(self, type: str) -> None:
         self._type.append(type)
 
-    def get_type(self) -> str:
+    def get_type(self) -> list[str]:
         return self._type
 
 
