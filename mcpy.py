@@ -170,11 +170,13 @@ def text_to_lines(file_path: str) -> list[Line]:
 
 def lines_to_text(lines: list['Line']) -> str:
     text: str = ''
+
     for line in lines:
-        if line.get_children() != []:
-            lines_to_text(line.get_children())
-        else:
+        if 'EoC' in line.get_type():
             text += line.get_mcf() + '\n'
+
+        if line.get_children() != []:
+            text += lines_to_text(line.get_children())
 
     return text
 
@@ -276,7 +278,7 @@ def set_lines_type(lines: list[Line]) -> list[Line]:
 
 def print_lines_tree(lines: list[Line], tabs: str = ""):
     for line in lines:
-        print(tabs + "- " + str(line.get_type()) + "---" + line.get_text())
+        print(tabs + "- " + line.get_mcf())
 
         if line.get_children() != []:
             print_lines_tree(line.get_children(), tabs + "  ")
@@ -304,10 +306,42 @@ def set_lines_children(lines: list[Line]) -> list[Line]:
     return new_lines
 
 
+def lines_text_to_mcf(lines: list[Line]) -> list[Line]:
+    for line in lines:
+        if line.get_parent() == Empty:
+            prev_mcf: str = ''
+        else:
+            prev_mcf: str = line.get_parent().get_mcf()
+
+        if 'SoC' in line.get_type():
+            text: str = re.sub(r':(?:\s*|\t*)$', '', line.get_text())
+            line.set_mcf('execute ' + text)
+        elif 'CoC' in line.get_type():
+            text: str = re.sub(r':(?:\s*|\t*)$', '', line.get_text())
+            line.set_mcf(prev_mcf + ' ' + text)
+
+            if not re.search(r'^execute ', line.get_mcf()):
+                line.set_mcf('execute' + line.get_mcf())
+        elif 'EoC' in line.get_type():
+            if prev_mcf != '':
+                line.set_mcf(prev_mcf + ' run ' + line.get_text())
+            else:
+                line.set_mcf(line.get_text())
+        else:
+            line.set_mcf(prev_mcf)
+
+        if line.get_children() != []:
+            line.set_children = lines_text_to_mcf(
+                line.get_children())
+
+    return lines
+
+
 def compile(file_path: str) -> None:
     lines: list[str] = text_to_lines(file_path)
     lines = set_lines_type(lines)
     lines = set_lines_children(lines)
+    lines = lines_text_to_mcf(lines)
 
     print(f'\n\n\n{file_path}')
     print_lines_tree(lines)
