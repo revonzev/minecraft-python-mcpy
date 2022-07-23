@@ -160,7 +160,7 @@ def is_mcf_SoC(text: str, indent: int, current_indent: int = 0) -> bool:
     return indent == current_indent and is_mcf_CoC(text)
 
 
-def is_mcf_CoC(text: str):
+def is_mcf_CoC(text: str) -> bool:
     return re.search(r':(?:\s*|\t*)$', text)
 
 
