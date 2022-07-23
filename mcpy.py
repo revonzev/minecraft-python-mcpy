@@ -20,6 +20,12 @@ settings: dict = {
     'auto_obfuscate': False,
     'file_for_globals': True
 }
+mcpy_patterns: dict[str: str] = {
+    'FUNCTION_DEFINE': r'^def (?P<name>[^\s]+)\((?P<arguments>.+)?\):(?:\s*|\t*)$',
+    'FUNCTION_CALL': r'^(?P<name>[^\s]+)\((?P<arguments>.+)?\)(?:\s*|\t*)$',
+    'FOR_LIST': r'^for (?P<name>[^\s]+) in \[(?P<list>.+)\]:(?:\s*|\t*)$',
+    'FOR_RANGE': r'^for (?P<name>[^\s]+) in range\((?P<start>.+),(?:\s*)(?P<end>.+)\):(?:\s*|\t*)$',
+}
 
 
 class Line():
