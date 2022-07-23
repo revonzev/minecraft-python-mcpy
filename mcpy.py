@@ -71,7 +71,7 @@ class Line():
         #       EMPTY, EoF (End of File), CoC (Continuation of Command), MCPY
         self._type: list[str] = []
         self._text: str = self._remove_indent(text)
-        self._code: str = ''
+        self._mcf: str = ''
         self._parent: Line = Empty
         self._children: list[Line] = []
 
@@ -102,11 +102,11 @@ class Line():
     def get_parent(self) -> object:
         return self._parent
 
-    def set_code(self, code: str) -> None:
-        self._code = code
+    def set_mcf(self, code: str) -> None:
+        self._mcf = code
 
-    def get_code(self) -> str:
-        return self._code
+    def get_mcf(self) -> str:
+        return self._mcf
 
     def set_type(self, type: list[str]) -> None:
         self._type = type
@@ -174,7 +174,7 @@ def lines_to_text(lines: list['Line']) -> str:
         if line.get_children() != []:
             lines_to_text(line.get_children())
         else:
-            text += line.get_code() + '\n'
+            text += line.get_mcf() + '\n'
 
     return text
 
