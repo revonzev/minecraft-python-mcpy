@@ -68,7 +68,7 @@ class Line():
     def __init__(self, text: str) -> None:
         self._indent: int = self._set_indent(text)
         # type: COMMAND, COMMENT, SoC (Start of Command), EoC (End of Command),
-        #       EMPTY, EoF (End of File), CoC (Continuation of Command)
+        #       EMPTY, EoF (End of File), CoC (Continuation of Command), MCPY
         self._type: list[str] = []
         self._text: str = self._remove_indent(text)
         self._code: str = ''
@@ -206,6 +206,20 @@ def is_mcf_CoC(text: str) -> bool:
     return re.search(r':(?:\s*|\t*)$', text)
 
 
+def is_mcpy(text: str) -> bool:
+    for pattern in mcpy_patterns.values():
+        if re.search(pattern, text):
+            return True
+
+    return False
+
+
+def which_mcpy(text: str) -> str:
+    for key, pattern in mcpy_patterns.items():
+        if re.search(pattern, text):
+            return key
+
+
 def write_output_files(text: str, file_path: str):
     file_path = file_path.replace('.mcpy', '.mcfunction')
 
@@ -243,6 +257,10 @@ def set_lines_type(lines: list[Line]) -> list[Line]:
         elif is_mcf_empty(line.get_text()):
             line.add_type('EMPTY')
             continue
+        elif is_mcpy(line.get_text()):
+            line.add_type('MCPY')
+            line.add_type(which_mcpy(line.get_text()))
+            continue
         else:
             line.add_type('COMMAND')
 
@@ -258,7 +276,7 @@ def set_lines_type(lines: list[Line]) -> list[Line]:
 
 def print_lines_tree(lines: list[Line], tabs: str = ""):
     for line in lines:
-        print(tabs + "- " + line.get_text())
+        print(tabs + "- " + str(line.get_type()) + "---" + line.get_text())
 
         if line.get_children() != []:
             print_lines_tree(line.get_children(), tabs + "  ")
