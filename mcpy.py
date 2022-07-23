@@ -26,6 +26,42 @@ mcpy_patterns: dict[str: str] = {
     'FOR_LIST': r'^for (?P<name>[^\s]+) in \[(?P<list>.+)\]:(?:\s*|\t*)$',
     'FOR_RANGE': r'^for (?P<name>[^\s]+) in range\((?P<start>.+),(?:\s*)(?P<end>.+)\):(?:\s*|\t*)$',
 }
+mcf_patterns: dict[str: list[str]] = {
+    'SCORE_DEFINE': [
+        r'^score (?P<name>[^\s]+) (?P<type>[^\s]+)(?P<display>\s\".+\")?(?:\s*|\t*)$',
+        r'scoreboard objectives add \g<name> \g<type>\g<display>',
+    ],
+    'SCORE_RESET': [
+        r'^score reset (?P<player>[^\s]+) (?P<objective>[^\s]+)?(?:\s*|\t*)$',
+        r'scoreboard players reset \g<player> \g<objective>',
+    ],
+    'SCORE_SET': [
+        r'^score (?P<objective>[^\s]+) (?P<player>.+ )?= (?P<value>[0-9]+)(?:\s*|\t*)$',
+        r'scoreboard players set \g<player>\g<objective> \g<value>',
+        r'scoreboard players set @s \g<objective> \g<value>',
+    ],
+    'SCORE_ADD': [
+        r'^score (?P<objective>[^\s]+) (?P<player>.+ )?+= (?P<value>[0-9]+)(?:\s*|\t*)$',
+        r'scoreboard players add \g<player>\g<objective> \g<value>',
+        r'scoreboard players add @s \g<objective> \g<value>',
+    ],
+    'SCORE_SUBTRACT': [
+        r'^score (?P<objective>[^\s]+) (?P<player>.+ )?-= (?P<value>[0-9]+)(?:\s*|\t*)$',
+        r'scoreboard players remove \g<player>\g<objective> \g<value>',
+        r'scoreboard players remove @s \g<objective> \g<value>',
+    ],
+    'SCORE_OPERATION': [
+        r'^score (?P<objective1>[^\s]+) (?P<player1>.+ )?(?P<operation>[%*+-=<>]*) (?P<objective2>[^\s]+)(?P<player2> .+)?(?:\s*|\t*)$',
+        r'scoreboard players operation \g<player1>\g<objective1> \g<operation>\g<player2> \g<objective2>',
+        r'scoreboard players operation @s \g<objective1> \g<operation>\g<player2> \g<objective2>',
+        r'scoreboard players operation \g<player1>\g<objective1> \g<operation> @s \g<objective2>',
+        r'scoreboard players operation @s\g<objective1> \g<operation> @s \g<objective2>',
+    ],
+    'SCORE_STORE': [
+        r'^score (?P<objective>[^\s]+) (?P<player>.+ )?:= (?P<command>.+)$',
+        r'execute store result score \g<player>\g<objective> run \g<command>',
+    ]
+}
 
 
 class Line():
