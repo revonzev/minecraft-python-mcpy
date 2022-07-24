@@ -177,9 +177,12 @@ def lines_to_text(lines: list['Line']) -> str:
 
     for line in lines:
         if 'EoC' in line.get_type():
-            text += line.get_mcf() + '\n'
+            text += line.get_mcf()
         elif 'COMMENT' in line.get_type() or 'EMPTY' in line.get_type():
-            text += line.get_text() + '\n'
+            text += line.get_text()
+
+        if 'EoF' not in line.get_type():
+            text += '\n'
 
         if line.get_children() != []:
             text += lines_to_text(line.get_children())
