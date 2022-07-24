@@ -17,6 +17,7 @@ settings: dict = {
     'obfuscate': False,
     'keep_unused_obfuscated_string': False,
     'keep_comment': False,
+    'keep_empty_lines': False,
     'auto_obfuscate': False,
     'file_for_globals': True
 }
@@ -68,7 +69,7 @@ class Line():
     def __init__(self, text: str) -> None:
         self._indent: int = self._set_indent(text)
         # type: COMMAND, COMMENT, SoC (Start of Command), EoC (End of Command),
-        #       EMPTY, EoF (End of File), CoC (Continuation of Command), MCPY
+        #       EMPTY, EoF (End of File), CoC (Continuation of Command), MCPY, CONTINUOUS
         self._type: list[str] = []
         self._text: str = self._remove_indent(text)
         self._mcf: str = ''
@@ -80,6 +81,9 @@ class Line():
 
     def _remove_indent(self, text: str) -> str:
         return re.sub(settings['tab_style'], '', text)
+
+    def set_indent(self, indent: int) -> None:
+        self._indent = indent
 
     def get_indent(self) -> int:
         return self._indent
@@ -174,6 +178,8 @@ def lines_to_text(lines: list['Line']) -> str:
     for line in lines:
         if 'EoC' in line.get_type():
             text += line.get_mcf() + '\n'
+        elif 'COMMENT' in line.get_type() or 'EMPTY' in line.get_type():
+            text += line.get_text() + '\n'
 
         if line.get_children() != []:
             text += lines_to_text(line.get_children())
@@ -253,6 +259,9 @@ def set_lines_type(lines: list[Line]) -> list[Line]:
         if lines[-1] == line:
             line.add_type('EoF')
 
+        if is_mcf_CoC:
+            line.add_type('CONTINUOUS')
+
         if is_mcf_comment(line.get_text()):
             line.add_type('COMMENT')
             continue
@@ -286,6 +295,7 @@ def print_lines_tree(lines: list[Line], tabs: str = ""):
 
 def set_lines_children(lines: list[Line]) -> list[Line]:
     new_lines: list[Line] = []
+    prev_line: Line = Empty
 
     for line in lines:
         if line.get_parent() == Empty:
@@ -293,11 +303,21 @@ def set_lines_children(lines: list[Line]) -> list[Line]:
         else:
             current_indent: int = line.get_parent().get_indent() + 1
 
+        if 'COMMENT' in line.get_type() or 'EMPTY' in line.get_type():
+            if prev_line == Empty:
+                line.set_indent(current_indent)
+            elif 'CONTINUOUS' in prev_line.get_type():
+                line.set_indent(prev_line.get_indent() + 1)
+            else:
+                line.set_indent(prev_line.get_indent())
+
         if line.get_indent() == current_indent:
             new_lines.append(line)
         elif line.get_indent() > current_indent:
             line.set_parent(new_lines[-1])
             new_lines[-1].add_children(line)
+
+        prev_line = line
 
     for line in new_lines:
         if line.get_children() != []:
