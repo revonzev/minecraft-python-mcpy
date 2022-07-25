@@ -245,11 +245,7 @@ def is_mcf_CoC(text: str) -> bool:
 
 
 def is_mcpy(text: str) -> bool:
-    for pattern in mcpy_patterns.values():
-        if re.search(pattern, text):
-            return True
-
-    return False
+    return any(re.search(pattern, text) for pattern in mcpy_patterns.values())
 
 
 def which_mcpy(text: str) -> str:
@@ -277,7 +273,7 @@ def create_folder_path(f_path: str):
     current_path = './'
     for i in f_path:
         if i != '':
-            current_path += i + '/'
+            current_path += f'{i}/'
             if not os.path.exists(current_path):
                 os.mkdir(current_path)
 
@@ -317,10 +313,10 @@ def set_lines_type(lines: list[Line]) -> list[Line]:
 
 def print_lines_tree(lines: list[Line], tabs: str = ""):
     for line in lines:
-        print(tabs + "- " + line.get_mcf())
+        print(f"{tabs}- {line.get_mcf()}")
 
         if line.get_children() != []:
-            print_lines_tree(line.get_children(), tabs + "  ")
+            print_lines_tree(line.get_children(), f"{tabs}  ")
 
 
 def set_lines_children(lines: list[Line]) -> list[Line]:
@@ -365,18 +361,18 @@ def lines_text_to_mcf(lines: list[Line]) -> list[Line]:
 
         if 'SoC' in line.get_type():
             text: str = re.sub(r':(?:\s*|\t*)$', '', line.get_text())
-            line.set_mcf('execute ' + text)
+            line.set_mcf(f'execute {text}')
         elif 'CoC' in line.get_type():
             text: str = re.sub(r':(?:\s*|\t*)$', '', line.get_text())
-            line.set_mcf(prev_mcf + ' ' + text)
+            line.set_mcf(f'{prev_mcf} {text}')
 
             if not re.search(r'^execute ', line.get_mcf()):
-                line.set_mcf('execute' + line.get_mcf())
+                line.set_mcf(f'execute{line.get_mcf()}')
         elif 'EoC' in line.get_type():
-            if prev_mcf != '':
-                line.set_mcf(prev_mcf + ' run ' + line.get_text())
-            else:
+            if not prev_mcf:
                 line.set_mcf(line.get_text())
+            else:
+                line.set_mcf(f'{prev_mcf} run {line.get_text()}')
         else:
             line.set_mcf(prev_mcf)
 
@@ -388,11 +384,7 @@ def lines_text_to_mcf(lines: list[Line]) -> list[Line]:
 
 
 def which_snippet(text: str) -> bool:
-    for key, pattern in snippet_patterns.items():
-        if re.search(pattern[0], text):
-            return key
-
-    return ''
+    return next((key for key, pattern in snippet_patterns.items() if re.search(pattern[0], text)), '')
 
 
 def snippets_to_mcf(lines: list[Line]) -> list[Line]:
