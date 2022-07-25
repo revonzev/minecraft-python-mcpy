@@ -22,46 +22,68 @@ settings: dict = {
     'file_for_globals': True
 }
 mcpy_patterns: dict[str: str] = {
-    'FUNCTION_DEFINE': r'^def (?P<name>[^\s]+)\((?P<arguments>.+)?\):(?:\s*|\t*)$',
-    'FUNCTION_CALL': r'^(?P<name>[^\s]+)\((?P<arguments>.+)?\)(?:\s*|\t*)$',
-    'FOR_LIST': r'^for (?P<name>[^\s]+) in \[(?P<list>.+)\]:(?:\s*|\t*)$',
-    'FOR_RANGE': r'^for (?P<name>[^\s]+) in range\((?P<start>.+),(?:\s*)(?P<end>.+)\):(?:\s*|\t*)$',
+    'FUNCTION_DEFINE': r'^def (?P<name>[^\s]+)\((?P<arguments>.+)?\):$',
+    'FUNCTION_CALL': r'^(?P<name>[^\s]+)\((?P<arguments>.+)?\)$',
+    'FOR_LIST': r'^for (?P<name>[^\s]+) in \[(?P<list>.+)\]:$',
+    'FOR_RANGE': r'^for (?P<name>[^\s]+) in range\((?P<start>.+),(?:\s*)(?P<end>.+)\):$',
 }
 mcf_patterns: dict[str: list[str]] = {
     'SCORE_DEFINE': [
-        r'^score (?P<name>[^\s]+) (?P<type>[^\s]+)(?P<display>\s\".+\")?(?:\s*|\t*)$',
+        r'^score (?P<name>[^\s]+) (?P<type>[^\s]+)(?P<display>\s\".+\")?$',
         r'scoreboard objectives add \g<name> \g<type>\g<display>',
     ],
     'SCORE_RESET': [
-        r'^score reset (?P<player>[^\s]+) (?P<objective>[^\s]+)?(?:\s*|\t*)$',
+        r'^score reset (?P<player>[^\s]+) (?P<objective>[^\s]+)?$',
         r'scoreboard players reset \g<player> \g<objective>',
     ],
     'SCORE_SET': [
-        r'^score (?P<objective>[^\s]+) (?P<player>.+ )?= (?P<value>[0-9]+)(?:\s*|\t*)$',
-        r'scoreboard players set \g<player>\g<objective> \g<value>',
+        r'^score (?P<objective>[^\s]+) (?P<player>[^\s]+) = (?P<value>[0-9]+)$',
+        r'scoreboard players set \g<player> \g<objective> \g<value>',
+    ],
+    'SCORE_SET_SELF': [
+        r'^score (?P<objective>[^\s]+) = (?P<value>[0-9]+)$',
         r'scoreboard players set @s \g<objective> \g<value>',
     ],
     'SCORE_ADD': [
-        r'^score (?P<objective>[^\s]+) (?P<player>.+ )?+= (?P<value>[0-9]+)(?:\s*|\t*)$',
-        r'scoreboard players add \g<player>\g<objective> \g<value>',
+        r'^score (?P<objective>[^\s]+) (?P<player>[^\s]+) \+= (?P<value>[0-9]+)$',
+        r'scoreboard players add \g<player> \g<objective> \g<value>',
+    ],
+    'SCORE_ADD_SELF': [
+        r'^score (?P<objective>[^\s]+) \+= (?P<value>[0-9]+)$',
         r'scoreboard players add @s \g<objective> \g<value>',
     ],
     'SCORE_SUBTRACT': [
-        r'^score (?P<objective>[^\s]+) (?P<player>.+ )?-= (?P<value>[0-9]+)(?:\s*|\t*)$',
-        r'scoreboard players remove \g<player>\g<objective> \g<value>',
+        r'^score (?P<objective>[^\s]+) (?P<player>[^\s]+) -= (?P<value>[0-9]+)$',
+        r'scoreboard players remove \g<player> \g<objective> \g<value>',
+    ],
+    'SCORE_SUBTRACT_SELF': [
+        r'^score (?P<objective>[^\s]+) -= (?P<value>[0-9]+)$',
         r'scoreboard players remove @s \g<objective> \g<value>',
     ],
-    'SCORE_OPERATION': [
-        r'^score (?P<objective1>[^\s]+) (?P<player1>.+ )?(?P<operation>[%*+-=<>]*) (?P<objective2>[^\s]+)(?P<player2> .+)?(?:\s*|\t*)$',
-        r'scoreboard players operation \g<player1>\g<objective1> \g<operation>\g<player2> \g<objective2>',
-        r'scoreboard players operation @s \g<objective1> \g<operation>\g<player2> \g<objective2>',
-        r'scoreboard players operation \g<player1>\g<objective1> \g<operation> @s \g<objective2>',
-        r'scoreboard players operation @s\g<objective1> \g<operation> @s \g<objective2>',
-    ],
     'SCORE_STORE': [
-        r'^score (?P<objective>[^\s]+) (?P<player>.+ )?:= (?P<command>.+)$',
-        r'execute store result score \g<player>\g<objective> run \g<command>',
-    ]
+        r'^score (?P<objective>[^\s]+) (?P<player>[^\s]+) := (?P<command>.+)$',
+        r'execute store result score \g<player> \g<objective> run \g<command>',
+    ],
+    'SCORE_STORE_SELF': [
+        r'^score (?P<objective>[^\s]+) := (?P<command>.+)$',
+        r'execute store result score @s \g<objective> run \g<command>',
+    ],
+    'SCORE_OPERATION_TARGET_TARGET': [
+        r'^score (?P<objective1>[^\s]+) (?P<player1>[^\s]+) (?P<operation>[\%\*\+\-\=\<\>]*) (?P<objective2>[^\s]+) (?P<player2>[^\s]+)$',
+        r'scoreboard players operation \g<player1> \g<objective1> \g<operation> \g<player2> \g<objective2>',
+    ],
+    'SCORE_OPERATION_SELF_TARGET': [
+        r'^score (?P<objective1>[^\s]+) (?P<operation>[\%\*\+\-\=\<\>]*) (?P<objective2>[^\s]+) (?P<player2>[^\s]+)$',
+        r'scoreboard players operation @s \g<objective1> \g<operation> \g<player2> \g<objective2>',
+    ],
+    'SCORE_OPERATION_TARGET_SELF': [
+        r'^score (?P<objective1>[^\s]+) (?P<player1>[^\s]+) (?P<operation>[\%\*\+\-\=\<\>]*) (?P<objective2>[^\s]+)$',
+        r'scoreboard players operation \g<player1> \g<objective1> \g<operation> @s \g<objective2>',
+    ],
+    'SCORE_OPERATION_SELF_SELF': [
+        r'^score (?P<objective1>[^\s]+) (?P<operation>[\%\*\+\-\=\<\>]*) (?P<objective2>[^\s]+)$',
+        r'scoreboard players operation @s \g<objective1> \g<operation> @s \g<objective2>',
+    ],
 }
 
 
@@ -161,15 +183,16 @@ def newline_to_list(text: str) -> list[str]:
 
 
 def text_to_lines(file_path: str) -> list[Line]:
-    data: list[Line] = []
+    new_lines: list[Line] = []
 
     with open(file_path) as f:
-        lines: list[str] = newline_to_list(f.read())
+        text_lines: list[str] = newline_to_list(f.read())
 
-    for line in lines:
-        data.append(Line(line))
+    for line in text_lines:
+        line = re.sub('(?:\s*|\t*)$', '', line)
+        new_lines.append(Line(line))
 
-    return data
+    return new_lines
 
 
 def lines_to_text(lines: list['Line']) -> str:
