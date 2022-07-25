@@ -117,6 +117,9 @@ class Line():
     def get_text(self) -> str:
         return self._text
 
+    def set_text(self, text) -> None:
+        self._text = text
+
     def set_children(self, children: list[object]) -> None:
         self._children = children
 
@@ -208,7 +211,7 @@ def lines_to_text(lines: list['Line']) -> str:
         elif 'COMMENT' in line.get_type() or 'EMPTY' in line.get_type():
             text += line.get_text()
 
-        if 'EoF' not in line.get_type():
+        if 'EoF' not in line.get_type() and 'CONTINUOUS' not in line.get_type():
             text += '\n'
 
         if line.get_children() != []:
@@ -285,7 +288,7 @@ def set_lines_type(lines: list[Line]) -> list[Line]:
         if lines[-1] == line:
             line.add_type('EoF')
 
-        if is_mcf_CoC:
+        if is_mcf_CoC(line.get_text()):
             line.add_type('CONTINUOUS')
 
         if is_mcf_comment(line.get_text()):
@@ -391,7 +394,7 @@ def snippets_to_mcf(lines: list[Line]) -> list[Line]:
     for line in lines:
         snippet_key = which_snippet(line.get_text())
         if snippet_key != '':
-            line.set_mcf(re.sub(
+            line.set_text(re.sub(
                 snippet_patterns[snippet_key][0], snippet_patterns[snippet_key][1], line.get_text()))
 
         if line.get_children() != []:
