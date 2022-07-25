@@ -27,7 +27,7 @@ mcpy_patterns: dict[str: str] = {
     'FOR_LIST': r'^for (?P<name>[^\s]+) in \[(?P<list>.+)\]:$',
     'FOR_RANGE': r'^for (?P<name>[^\s]+) in range\((?P<start>.+),(?:\s*)(?P<end>.+)\):$',
 }
-mcf_patterns: dict[str: list[str]] = {
+snippet_patterns: dict[str: list[str]] = {
     'SCORE_DEFINE': [
         r'^score (?P<name>[^\s]+) (?P<type>[^\s]+)(?P<display>\s\".+\")?$',
         r'scoreboard objectives add \g<name> \g<type>\g<display>',
@@ -383,11 +383,33 @@ def lines_text_to_mcf(lines: list[Line]) -> list[Line]:
     return lines
 
 
+def which_snippet(text: str) -> bool:
+    for key, pattern in snippet_patterns.items():
+        if re.search(pattern[0], text):
+            return key
+
+    return ''
+
+
+def snippets_to_mcf(lines: list[Line]) -> list[Line]:
+    for line in lines:
+        snippet_key = which_snippet(line.get_mcf())
+        if snippet_key != '':
+            line.set_mcf(re.sub(
+                snippet_patterns[snippet_key][0], snippet_patterns[snippet_key][1], line.get_mcf()))
+
+        if line.get_children() != []:
+            line.set_children = snippets_to_mcf(line.get_children())
+
+    return lines
+
+
 def compile(file_path: str) -> None:
     lines: list[str] = text_to_lines(file_path)
     lines = set_lines_type(lines)
     lines = set_lines_children(lines)
     lines = lines_text_to_mcf(lines)
+    lines = snippets_to_mcf(lines)
 
     print(f'\n\n\n{file_path}')
     print_lines_tree(lines)
