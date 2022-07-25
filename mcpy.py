@@ -29,7 +29,7 @@ mcpy_patterns: dict[str: str] = {
 }
 snippet_patterns: dict[str: list[str]] = {
     'SCORE_RESET': [
-        r'^score reset (?P<player>[^\s]+) (?P<objective>[^\s]+)?$',
+        r'^score reset (?P<player>[^\s]+(?:\[.+\])?) (?P<objective>[^\s]+)?$',
         r'scoreboard players reset \g<player> \g<objective>',
     ],
     'SCORE_RESET_SELF': [
@@ -41,7 +41,7 @@ snippet_patterns: dict[str: list[str]] = {
         r'scoreboard objectives add \g<name> \g<type>\g<display>',
     ],
     'SCORE_SET': [
-        r'^score (?P<objective>[^\s]+) (?P<player>[^\s]+) = (?P<value>[0-9]+)$',
+        r'^score (?P<objective>[^\s]+) (?P<player>[^\s]+(?:\[.+\])?) = (?P<value>[0-9]+)$',
         r'scoreboard players set \g<player> \g<objective> \g<value>',
     ],
     'SCORE_SET_SELF': [
@@ -49,7 +49,7 @@ snippet_patterns: dict[str: list[str]] = {
         r'scoreboard players set @s \g<objective> \g<value>',
     ],
     'SCORE_ADD': [
-        r'^score (?P<objective>[^\s]+) (?P<player>[^\s]+) \+= (?P<value>[0-9]+)$',
+        r'^score (?P<objective>[^\s]+) (?P<player>[^\s]+(?:\[.+\])?) \+= (?P<value>[0-9]+)$',
         r'scoreboard players add \g<player> \g<objective> \g<value>',
     ],
     'SCORE_ADD_SELF': [
@@ -57,7 +57,7 @@ snippet_patterns: dict[str: list[str]] = {
         r'scoreboard players add @s \g<objective> \g<value>',
     ],
     'SCORE_SUBTRACT': [
-        r'^score (?P<objective>[^\s]+) (?P<player>[^\s]+) -= (?P<value>[0-9]+)$',
+        r'^score (?P<objective>[^\s]+) (?P<player>[^\s]+(?:\[.+\])?) -= (?P<value>[0-9]+)$',
         r'scoreboard players remove \g<player> \g<objective> \g<value>',
     ],
     'SCORE_SUBTRACT_SELF': [
@@ -65,7 +65,7 @@ snippet_patterns: dict[str: list[str]] = {
         r'scoreboard players remove @s \g<objective> \g<value>',
     ],
     'SCORE_STORE': [
-        r'^score (?P<objective>[^\s]+) (?P<player>[^\s]+) := (?P<command>.+)$',
+        r'^score (?P<objective>[^\s]+) (?P<player>[^\s]+(?:\[.+\])?) := (?P<command>.+)$',
         r'execute store result score \g<player> \g<objective> run \g<command>',
     ],
     'SCORE_STORE_SELF': [
@@ -73,15 +73,15 @@ snippet_patterns: dict[str: list[str]] = {
         r'execute store result score @s \g<objective> run \g<command>',
     ],
     'SCORE_OPERATION_TARGET_TARGET': [
-        r'^score (?P<objective1>[^\s]+) (?P<player1>[^\s]+) (?P<operation>[\%\*\+\-\=\<\>]*) (?P<objective2>[^\s]+) (?P<player2>[^\s]+)$',
+        r'^score (?P<objective1>[^\s]+) (?P<player1>[^\s]+(?:\[.+\])?) (?P<operation>[\%\*\+\-\=\<\>]*) (?P<objective2>[^\s]+) (?P<player2>[^\s]+(?:\[.+\])?)$',
         r'scoreboard players operation \g<player1> \g<objective1> \g<operation> \g<player2> \g<objective2>',
     ],
     'SCORE_OPERATION_SELF_TARGET': [
-        r'^score (?P<objective1>[^\s]+) (?P<operation>[\%\*\+\-\=\<\>]*) (?P<objective2>[^\s]+) (?P<player2>[^\s]+)$',
+        r'^score (?P<objective1>[^\s]+) (?P<operation>[\%\*\+\-\=\<\>]*) (?P<objective2>[^\s]+) (?P<player2>[^\s]+(?:\[.+\])?)$',
         r'scoreboard players operation @s \g<objective1> \g<operation> \g<player2> \g<objective2>',
     ],
     'SCORE_OPERATION_TARGET_SELF': [
-        r'^score (?P<objective1>[^\s]+) (?P<player1>[^\s]+) (?P<operation>[\%\*\+\-\=\<\>]*) (?P<objective2>[^\s]+)$',
+        r'^score (?P<objective1>[^\s]+) (?P<player1>[^\s]+(?:\[.+\])?) (?P<operation>[\%\*\+\-\=\<\>]*) (?P<objective2>[^\s]+)$',
         r'scoreboard players operation \g<player1> \g<objective1> \g<operation> @s \g<objective2>',
     ],
     'SCORE_OPERATION_SELF_SELF': [
@@ -410,8 +410,8 @@ def compile(file_path: str) -> None:
     lines = snippets_to_mcf(lines)
     lines = lines_text_to_mcf(lines)
 
-    print(f'\n\n\n{file_path}')
-    print_lines_tree(lines)
+    # print(f'\n\n\n{file_path}')
+    # print_lines_tree(lines)
 
     text: str = lines_to_text(lines)  # TODO
 
