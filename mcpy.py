@@ -389,10 +389,10 @@ def which_snippet(text: str) -> bool:
 
 def snippets_to_mcf(lines: list[Line]) -> list[Line]:
     for line in lines:
-        snippet_key = which_snippet(line.get_mcf())
+        snippet_key = which_snippet(line.get_text())
         if snippet_key != '':
             line.set_mcf(re.sub(
-                snippet_patterns[snippet_key][0], snippet_patterns[snippet_key][1], line.get_mcf()))
+                snippet_patterns[snippet_key][0], snippet_patterns[snippet_key][1], line.get_text()))
 
         if line.get_children() != []:
             line.set_children = snippets_to_mcf(line.get_children())
@@ -404,8 +404,8 @@ def compile(file_path: str) -> None:
     lines: list[str] = text_to_lines(file_path)
     lines = set_lines_type(lines)
     lines = set_lines_children(lines)
-    lines = lines_text_to_mcf(lines)
     lines = snippets_to_mcf(lines)
+    lines = lines_text_to_mcf(lines)
 
     print(f'\n\n\n{file_path}')
     print_lines_tree(lines)
