@@ -28,13 +28,17 @@ mcpy_patterns: dict[str: str] = {
     'FOR_RANGE': r'^for (?P<name>[^\s]+) in range\((?P<start>.+),(?:\s*)(?P<end>.+)\):$',
 }
 snippet_patterns: dict[str: list[str]] = {
-    'SCORE_DEFINE': [
-        r'^score (?P<name>[^\s]+) (?P<type>[^\s]+)(?P<display>\s\".+\")?$',
-        r'scoreboard objectives add \g<name> \g<type>\g<display>',
-    ],
     'SCORE_RESET': [
         r'^score reset (?P<player>[^\s]+) (?P<objective>[^\s]+)?$',
         r'scoreboard players reset \g<player> \g<objective>',
+    ],
+    'SCORE_RESET_SELF': [
+        r'^score reset (?P<objective>[^\s]+)?$',
+        r'scoreboard players reset @s \g<objective>',
+    ],
+    'SCORE_DEFINE': [
+        r'^score (?P<name>[^\s]+) (?P<type>[^\s]+)(?P<display>\s\".+\")?$',
+        r'scoreboard objectives add \g<name> \g<type>\g<display>',
     ],
     'SCORE_SET': [
         r'^score (?P<objective>[^\s]+) (?P<player>[^\s]+) = (?P<value>[0-9]+)$',
