@@ -27,7 +27,7 @@ mcpy_patterns: dict[str: str] = {
     'FUNCTION_DEFINE': r'^def (?P<name>[^\s]+)\((?P<arguments>.+)?\):$',
     'FUNCTION_CALL': r'^(?P<name>[^\s]+)\((?P<arguments>.+)?\)$',
     'FOR_LIST': r'^for (?P<name>[^\s]+) in \[(?P<list>.+)\]:$',
-    'FOR_RANGE': r'^for (?P<name>[^\s]+) in range\((?P<start>.+),(?:\s*)(?P<end>.+)\):$',
+    'FOR_RANGE': r'^for (?P<name>[^\s]+) in range\((?P<start>\d+),(?:\s*)(?P<end>\d+)\):$',
 }
 snippet_patterns: dict[str: list[str]] = {
     'SCORE_RESET': [
