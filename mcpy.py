@@ -17,6 +17,7 @@ settings: dict = {
     'obfuscate': False,
     'keep_unused_obfuscated_string': False,
     'keep_comment': False,
+    'indented_comment': True,
     'keep_empty_lines': False,
     'auto_obfuscate': False,
     'file_for_globals': True
@@ -331,8 +332,7 @@ def set_lines_children(lines: list[Line]) -> list[Line]:
             current_indent: int = 0
         else:
             current_indent: int = line.get_parent().get_indent() + 1
-
-        if 'COMMENT' in line.get_type() or 'EMPTY' in line.get_type():
+        if (not settings['indented_comment'] and 'COMMENT' in line.get_type()) or 'EMPTY' in line.get_type():
             if prev_line == Empty:
                 line.set_indent(current_indent)
             elif 'CONTINUOUS' in prev_line.get_type():
@@ -380,8 +380,8 @@ def lines_text_to_mcf(lines: list[Line]) -> list[Line]:
             line.set_mcf(prev_mcf)
 
         if line.get_children() != []:
-            line.set_children = lines_text_to_mcf(
-                line.get_children())
+            line.set_children(lines_text_to_mcf(
+                line.get_children()))
 
     return lines
 
@@ -398,7 +398,7 @@ def snippets_to_mcf(lines: list[Line]) -> list[Line]:
                 snippet_patterns[snippet_key][0], snippet_patterns[snippet_key][1], line.get_text()))
 
         if line.get_children() != []:
-            line.set_children = snippets_to_mcf(line.get_children())
+            line.set_children(snippets_to_mcf(line.get_children()))
 
     return lines
 
