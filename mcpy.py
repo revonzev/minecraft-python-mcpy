@@ -198,6 +198,10 @@ def text_to_lines(file_path: str) -> list[Line]:
 
     for line in text_lines:
         line = re.sub('(?:\s*|\t*)$', '', line)
+
+        if (not settings['keep_comment'] and is_mcf_comment(line)) or (not settings['keep_empty_lines'] and is_mcf_empty(line)):
+            continue
+
         new_lines.append(Line(line))
 
     return new_lines
