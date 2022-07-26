@@ -425,6 +425,26 @@ def mcpy_for_range(line: Line) -> Line:
     return line
 
 
+def mcpy_for_list(line: Line) -> Line:
+    name: str = re.sub(mcpy_patterns['FOR_LIST'], '\g<name>', line.get_text())
+    text_items: str = re.sub(
+        mcpy_patterns['FOR_LIST'], '\g<list>', line.get_text())
+    text_items.replace(', ', ',')
+    items = re.split(r'(?!\B"[^"]*), |,(?![^"]*"\B)', text_items)
+
+    new_children: list[Line] = []
+    for i in items:
+        i = re.sub('^"', '', i)
+        i = re.sub('"$', '', i)
+
+        for child in line.get_children():
+            new_children.append(mcpy_for_recursion(deepcopy(child), name, i))
+            new_children[-1].set_parent(line)
+    line.set_children(new_children)
+
+    return line
+
+
 def mcpy_for_recursion(line: Line, name: str, i) -> Line:
     line.set_text(line.get_text().replace(name, str(i)))
 
@@ -443,9 +463,14 @@ def process_mcpy(lines: list[Line]) -> list[Line]:
         if 'MCPY' in line.get_type() and 'PROCESSED' not in line.get_type():
             if 'FOR_RANGE' in line.get_type():
                 line = mcpy_for_range(line)
-            line.add_type('PROCESSED')
-            reprocess = True
-            break
+                line.add_type('PROCESSED')
+                reprocess = True
+                break
+            elif 'FOR_LIST' in line.get_type():
+                line = mcpy_for_list(line)
+                line.add_type('PROCESSED')
+                reprocess = True
+                break
 
         if line.get_children() != []:
             line.set_children(process_mcpy(line.get_children()))
@@ -464,8 +489,8 @@ def compile(file_path: str) -> None:
     lines = process_mcpy(lines)
     lines = lines_text_to_mcf(lines)
 
-    # print(f'\n\n\n{file_path}')
-    # print_lines_tree(lines)
+    print(f'\n\n\n{file_path}')
+    print_lines_tree(lines)
 
     text: str = lines_to_text(lines)  # TODO
 
