@@ -408,25 +408,29 @@ def snippets_to_mcf(lines: list[Line]) -> list[Line]:
     return lines
 
 
-def mcpy_for_range(text: str, children: list[Line]) -> Line:
-    start: int = int(re.sub(mcpy_patterns['FOR_RANGE'], '\g<start>', text))
-    end: int = int(re.sub(mcpy_patterns['FOR_RANGE'], '\g<end>', text))
-    name: str = re.sub(mcpy_patterns['FOR_RANGE'], '\g<name>', text)
+def mcpy_for_range(line: Line) -> Line:
+    start: int = int(
+        re.sub(mcpy_patterns['FOR_RANGE'], '\g<start>', line.get_text()))
+    end: int = int(
+        re.sub(mcpy_patterns['FOR_RANGE'], '\g<end>', line.get_text()))
+    name: str = re.sub(mcpy_patterns['FOR_RANGE'], '\g<name>', line.get_text())
 
-    new_children = []
+    new_children: list[Line] = []
     for i in range(start, end):
-        for child in children:
-            new_children.append(
-                mcpy_for_recursion(deepcopy(child), name, i))
+        for child in line.get_children():
+            new_children.append(mcpy_for_recursion(deepcopy(child), name, i))
+            new_children[-1].set_parent(line)
+    line.set_children(new_children)
 
-    return new_children
+    return line
 
 
-def mcpy_for_recursion(line: Line, name: str, i):
+def mcpy_for_recursion(line: Line, name: str, i) -> Line:
     line.set_text(line.get_text().replace(name, str(i)))
 
     if line.get_children() != []:
         for child in line.get_children():
+            child.set_parent(line)
             mcpy_for_recursion(child, name, i)
 
     return line
@@ -434,19 +438,21 @@ def mcpy_for_recursion(line: Line, name: str, i):
 
 def process_mcpy(lines: list[Line]) -> list[Line]:
     reprocess = False
+
     for line in lines:
-        if 'MCPY' in line.get_type() and 'FOR_RANGE' in line.get_type() and 'PROCESSED' not in line.get_type():
-            line.set_children(mcpy_for_range(
-                line.get_text(), line.get_children()))
+        if 'MCPY' in line.get_type() and 'PROCESSED' not in line.get_type():
+            if 'FOR_RANGE' in line.get_type():
+                line = mcpy_for_range(line)
             line.add_type('PROCESSED')
             reprocess = True
             break
 
         if line.get_children() != []:
-            process_mcpy(line.get_children())
+            line.set_children(process_mcpy(line.get_children()))
 
     if reprocess:
         lines = process_mcpy(lines)
+
     return lines
 
 
