@@ -28,6 +28,16 @@ mcpy_patterns: dict[str: str] = {
     'FUNCTION_CALL': r'^(?P<name>[^\s]+)\((?P<arguments>.+)?\)$',
     'FOR_LIST': r'^for (?P<name>[^\s]+) in \[(?P<list>.+)\]:$',
     'FOR_RANGE': r'^for (?P<name>[^\s]+) in range\((?P<start>\d+),(?:\s*)(?P<end>\d+)\):$',
+    'VAR_NUM': r'^var (?P<name>[^\s]+) (?P<operator>[\+\-\*\/|]|)= (?P<value>\d+)$',
+    'VAR_STR': r'^var (?P<name>[^\s]+) (?P<operator>[\+]|)= \"(?P<value>.+)\"$',
+    'VAR_DELETE': r'^var del (?P<name>[^\s]+)$',
+    'VAR_LIST_SET': r'^var (?P<name>[^\s]+) = \[(?P<value>.+)\]$',
+    'VAR_LIST_REMOVE': r'^(?P<name>[^\s]+).remove\((?P<value>.+)\)$',
+    'VAR_LIST_APPEND': r'^(?P<name>[^\s]+).append\((?P<value>.+)\)$',
+    'VAR_LIST_INSERT': r'^(?P<name>[^\s]+).insert\((?P<value>.+)\)$',
+    'VAR_LIST_POP': r'(?P<name>[^\s]+).pop\((?P<value>.+|)\)',
+    'VAR_LIST_COUNT': r'(?P<name>[^\s]+).count\(\)',
+    'VAR_LIST_GET': r'(?P<name>[^\s]+)\[(?P<index>\d+)\]',
 }
 snippet_patterns: dict[str: list[str]] = {
     'SCORE_RESET': [
@@ -91,6 +101,7 @@ snippet_patterns: dict[str: list[str]] = {
         r'scoreboard players operation @s \g<objective1> \g<operation> @s \g<objective2>',
     ],
 }
+mcpy_storage: dict = {}  # name: value
 
 
 class Line():
@@ -217,7 +228,7 @@ def lines_to_text(lines: list['Line']) -> str:
         elif 'COMMENT' in line.get_type() or 'EMPTY' in line.get_type():
             text += line.get_text()
 
-        if 'EoF' not in line.get_type() and 'CONTINUOUS' not in line.get_type():
+        if 'EoF' not in line.get_type() and 'CONTINUOUS' not in line.get_type() and 'MCPY' not in line.get_type():
             text += '\n'
 
         if line.get_children() != []:
@@ -257,10 +268,8 @@ def is_mcpy(text: str) -> bool:
     return any(re.search(pattern, text) for pattern in mcpy_patterns.values())
 
 
-def which_mcpy(text: str) -> str:
-    for key, pattern in mcpy_patterns.items():
-        if re.search(pattern, text):
-            return key
+def which_mcpy(text: str) -> list[str]:
+    return [key for key, pattern in mcpy_patterns.items() if re.search(pattern, text)]
 
 
 def write_output_files(text: str, file_path: str):
@@ -304,9 +313,16 @@ def set_lines_type(lines: list[Line]) -> list[Line]:
             line.add_type('EMPTY')
             continue
         elif is_mcpy(line.get_text()):
-            line.add_type('MCPY')
-            line.add_type(which_mcpy(line.get_text()))
-            continue
+
+            mcpy_types: list[str] = which_mcpy(line.get_text())
+            for i in mcpy_types:
+                line.add_type(i)
+
+            continuable = ['FUNCTION_DEFINE', 'FUNCTION_CALL', 'FOR_LIST', 'FOR_RANGE', 'VAR_NUM',
+                           'VAR_STR', 'VAR_DELETE', 'VAR_LIST_SET', 'VAR_LIST_REMOVE', 'VAR_LIST_APPEND', 'VAR_LIST_INSERT']
+            if any(x in mcpy_types for x in continuable):
+                line.add_type('MCPY')
+                continue
         else:
             line.add_type('COMMAND')
 
@@ -456,27 +472,88 @@ def mcpy_for_recursion(line: Line, name: str, i) -> Line:
     return line
 
 
+def mcpy_var_num(line: Line):
+    name: str = re.sub(mcpy_patterns['VAR_NUM'], '\g<name>', line.get_text())
+    operator: str = re.sub(
+        mcpy_patterns['VAR_NUM'], '\g<operator>', line.get_text())
+    value: int = re.sub(mcpy_patterns['VAR_NUM'], '\g<value>', line.get_text())
+
+    mcpy_storage[name] = eval(
+        f'{mcpy_storage[name]} {operator} {value}') if operator else value
+
+
+def mcpy_var_str(line: Line):
+    name: str = re.sub(mcpy_patterns['VAR_STR'], '\g<name>', line.get_text())
+    operator: str = re.sub(
+        mcpy_patterns['VAR_STR'], '\g<operator>', line.get_text())
+    value: int = re.sub(mcpy_patterns['VAR_STR'], '\g<value>', line.get_text())
+
+    if operator == '':
+        mcpy_storage[name] = value
+    else:
+        mcpy_storage[name] += value
+
+
+def mcpy_var_delete(line: Line):
+    name: str = re.sub(mcpy_patterns['VAR_DELETE'],
+                       '\g<name>', line.get_text())
+    mcpy_storage.pop(name)
+
+
 def process_mcpy(lines: list[Line]) -> list[Line]:
-    reprocess = False
+    reprocess: bool = False
 
     for line in lines:
-        if 'MCPY' in line.get_type() and 'PROCESSED' not in line.get_type():
-            if 'FOR_RANGE' in line.get_type():
-                line = mcpy_for_range(line)
-                line.add_type('PROCESSED')
-                reprocess = True
-                break
-            elif 'FOR_LIST' in line.get_type():
-                line = mcpy_for_list(line)
-                line.add_type('PROCESSED')
-                reprocess = True
-                break
+        if mcpy_storage != {}:
+            exception: list[str] = ['VAR_NUM', 'VAR_STR', 'VAR_DELETE']
+            for key, value in mcpy_storage.items():
+                if line.get_text().find(key) and all(x not in line.get_type() for x in exception):
+                    line.set_text(line.get_text().replace(key, str(value)))
+                elif any(x not in line.get_type() for x in exception):
+                    new_value = re.sub(r'(?:.+)=(?P<value>.+)$',
+                                       r'\g<value>', line.get_text())
+                    new_value = new_value.replace(key, str(value))
+                    line.set_text(re.sub(r'=(?P<value>.+)$',
+                                  f'={new_value}', line.get_text()))
+                    print(line.get_text())
+
+        if 'MCPY' in line.get_type():
+            if 'VAR_NUM' in line.get_type():
+                mcpy_var_num(line)
+                continue
+            elif 'VAR_STR' in line.get_type():
+                mcpy_var_str(line)
+                continue
+            elif 'VAR_DELETE' in line.get_type():
+                mcpy_var_delete(line)
+                continue
+
+            if 'PROCESSED' not in line.get_type():
+                if 'FOR_RANGE' in line.get_type():
+                    line = mcpy_for_range(line)
+                    line.add_type('PROCESSED')
+                    reprocess = True
+                    break
+                elif 'FOR_LIST' in line.get_type():
+                    line = mcpy_for_list(line)
+                    line.add_type('PROCESSED')
+                    reprocess = True
+                    break
 
         if line.get_children() != []:
             line.set_children(process_mcpy(line.get_children()))
 
     if reprocess:
         lines = process_mcpy(lines)
+
+    # for line in lines:
+    #     if mcpy_storage != {}:
+    #         for key, value in mcpy_storage.items():
+    #             if line.get_text().find(key):
+    #                 line.set_text(line.get_text().replace(key, str(value)))
+
+    #     if line.get_children() != []:
+    #         line.set_children(process_mcpy(line.get_children()))
 
     return lines
 
@@ -489,8 +566,8 @@ def compile(file_path: str) -> None:
     lines = process_mcpy(lines)
     lines = lines_text_to_mcf(lines)
 
-    print(f'\n\n\n{file_path}')
-    print_lines_tree(lines)
+    # print(f'\n\n\n{file_path}')
+    # print_lines_tree(lines)
 
     text: str = lines_to_text(lines)  # TODO
 
