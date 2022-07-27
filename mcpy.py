@@ -28,7 +28,7 @@ mcpy_patterns: dict[str: str] = {
     'FUNCTION_CALL': r'^(?P<name>[^\s]+)\((?P<arguments>.+)?\)$',
     'FOR_LIST': r'^for (?P<name>[^\s]+) in \[(?P<list>.+)\]:$',
     'FOR_RANGE': r'^for (?P<name>[^\s]+) in range\((?P<start>\d+),(?:\s*)(?P<end>\d+)\):$',
-    'VAR_NUM': r'^var (?P<name>[^\s]+) (?P<operator>[\+\-\*\/|]|)= (?P<value>\d+)$',
+    'VAR_NUM': r'^var (?P<name>[^\s]+) (?P<operator>[\+\-\*\/|]|)= (?P<value>[+-]?(?:\d*\.)?\d+)$',
     'VAR_STR': r'^var (?P<name>[^\s]+) (?P<operator>[\+]|)= \"(?P<value>.+)\"$',
     'VAR_DELETE': r'^var del (?P<name>[^\s]+)$',
     'VAR_LIST_SET': r'^var (?P<name>[^\s]+) = \[(?P<value>.+)\]$',
@@ -313,7 +313,6 @@ def set_lines_type(lines: list[Line]) -> list[Line]:
             line.add_type('EMPTY')
             continue
         elif is_mcpy(line.get_text()):
-
             mcpy_types: list[str] = which_mcpy(line.get_text())
             for i in mcpy_types:
                 line.add_type(i)
@@ -476,7 +475,13 @@ def mcpy_var_num(line: Line):
     name: str = re.sub(mcpy_patterns['VAR_NUM'], '\g<name>', line.get_text())
     operator: str = re.sub(
         mcpy_patterns['VAR_NUM'], '\g<operator>', line.get_text())
-    value: int = re.sub(mcpy_patterns['VAR_NUM'], '\g<value>', line.get_text())
+    value_text: str = re.sub(
+        mcpy_patterns['VAR_NUM'], '\g<value>', line.get_text())
+
+    if value_text.isdecimal:
+        value: float = float(value_text)
+    else:
+        value: int = int(value_text)
 
     mcpy_storage[name] = eval(
         f'{mcpy_storage[name]} {operator} {value}') if operator else value
@@ -515,7 +520,6 @@ def process_mcpy(lines: list[Line]) -> list[Line]:
                     new_value = new_value.replace(key, str(value))
                     line.set_text(re.sub(r'=(?P<value>.+)$',
                                   f'={new_value}', line.get_text()))
-                    print(line.get_text())
 
         if 'MCPY' in line.get_type():
             if 'VAR_NUM' in line.get_type():
@@ -545,15 +549,6 @@ def process_mcpy(lines: list[Line]) -> list[Line]:
 
     if reprocess:
         lines = process_mcpy(lines)
-
-    # for line in lines:
-    #     if mcpy_storage != {}:
-    #         for key, value in mcpy_storage.items():
-    #             if line.get_text().find(key):
-    #                 line.set_text(line.get_text().replace(key, str(value)))
-
-    #     if line.get_children() != []:
-    #         line.set_children(process_mcpy(line.get_children()))
 
     return lines
 
