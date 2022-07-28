@@ -199,6 +199,7 @@ def has_files_modified() -> bool:
 
 
 def newline_to_list(text: str) -> list[str]:
+    text = re.sub(r'\\\n(?:\s*|\t*)', '', text)
     return text.splitlines()
 
 
