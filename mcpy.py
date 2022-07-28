@@ -479,13 +479,13 @@ def mcpy_var_num(line: Line):
     value_text: str = re.sub(
         mcpy_patterns['VAR_NUM'], '\g<value>', line.get_text())
 
-    if value_text.isdecimal:
-        value: float = float(value_text)
-    else:
-        value: int = int(value_text)
-
-    local_mcpy_storage[name] = eval(
-        f'{local_mcpy_storage[name]} {operator} {value}') if operator else value
+    if operator:
+        local_mcpy_storage[name] = eval(
+            f'{local_mcpy_storage[name]} {operator} {value_text}')
+    elif value_text.isdigit():
+        local_mcpy_storage[name] = int(value_text)
+    elif value_text.isdecimal():
+        local_mcpy_storage[name] = float(value_text)
 
 
 def mcpy_var_str(line: Line):
