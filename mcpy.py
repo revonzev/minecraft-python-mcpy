@@ -101,7 +101,7 @@ snippet_patterns: dict[str: list[str]] = {
         r'scoreboard players operation @s \g<objective1> \g<operation> @s \g<objective2>',
     ],
 }
-mcpy_storage: dict = {}  # name: value
+local_mcpy_storage: dict = {}  # name: value
 
 
 class Line():
@@ -484,8 +484,8 @@ def mcpy_var_num(line: Line):
     else:
         value: int = int(value_text)
 
-    mcpy_storage[name] = eval(
-        f'{mcpy_storage[name]} {operator} {value}') if operator else value
+    local_mcpy_storage[name] = eval(
+        f'{local_mcpy_storage[name]} {operator} {value}') if operator else value
 
 
 def mcpy_var_str(line: Line):
@@ -495,24 +495,24 @@ def mcpy_var_str(line: Line):
     value: int = re.sub(mcpy_patterns['VAR_STR'], '\g<value>', line.get_text())
 
     if operator == '':
-        mcpy_storage[name] = value
+        local_mcpy_storage[name] = value
     else:
-        mcpy_storage[name] += value
+        local_mcpy_storage[name] += value
 
 
 def mcpy_var_delete(line: Line):
     name: str = re.sub(mcpy_patterns['VAR_DELETE'],
                        '\g<name>', line.get_text())
-    mcpy_storage.pop(name)
+    local_mcpy_storage.pop(name)
 
 
 def process_mcpy(lines: list[Line]) -> list[Line]:
     reprocess: bool = False
 
     for line in lines:
-        if mcpy_storage != {}:
+        if local_mcpy_storage != {}:
             exception: list[str] = ['VAR_NUM', 'VAR_STR', 'VAR_DELETE']
-            for key, value in mcpy_storage.items():
+            for key, value in local_mcpy_storage.items():
                 if line.get_text().find(key) and all(x not in line.get_type() for x in exception):
                     line.set_text(line.get_text().replace(key, str(value)))
                 elif any(x not in line.get_type() for x in exception):
@@ -555,6 +555,8 @@ def process_mcpy(lines: list[Line]) -> list[Line]:
 
 
 def compile(file_path: str) -> None:
+    local_mcpy_storage = {}
+
     lines: list[str] = text_to_lines(file_path)
     lines = set_lines_type(lines)
     lines = set_lines_children(lines)
