@@ -107,7 +107,7 @@ class Line():
     def __init__(self, text: str) -> None:
         self._indent: int = self._set_indent(text)
         # type: COMMAND, COMMENT, SoC (Start of Command), EoC (End of Command),
-        #       EMPTY, EoF (End of File), CoC (Continuation of Command), MCPY, CONTINUOUS
+        #       EMPTY, CoC (Continuation of Command), MCPY, CONTINUOUS
         self._type: list[str] = []
         self._text: str = self._remove_indent(text)
         self._mcf: str = ''
@@ -228,7 +228,7 @@ def lines_to_text(lines: list['Line']) -> str:
         elif 'COMMENT' in line.get_type() or 'EMPTY' in line.get_type():
             text += line.get_text()
 
-        if 'EoF' not in line.get_type() and 'CONTINUOUS' not in line.get_type() and 'MCPY' not in line.get_type():
+        if 'CONTINUOUS' not in line.get_type() and 'MCPY' not in line.get_type():
             text += '\n'
 
         if line.get_children() != []:
@@ -300,9 +300,6 @@ def set_lines_type(lines: list[Line]) -> list[Line]:
     current_indent: int = 0
 
     for line in lines:
-        if lines[-1] == line:
-            line.add_type('EoF')
-
         if is_mcf_CoC(line.get_text()):
             line.add_type('CONTINUOUS')
 
@@ -567,7 +564,8 @@ def compile(file_path: str) -> None:
     # print(f'\n\n\n{file_path}')
     # print_lines_tree(lines)
 
-    text: str = lines_to_text(lines)  # TODO
+    text: str = lines_to_text(lines)
+    text = re.sub('\n$', '', text)
 
     write_output_files(text, file_path)
 
