@@ -28,8 +28,6 @@ mcpy_patterns: dict[str: str] = {
     'FUNCTION_CALL': r'^(?P<name>[^\s]+)\((?P<arguments>.+)?\)$',
     'FOR_LIST': r'^for (?P<name>[^\s]+) in \[(?P<list>.+)\]:$',
     'FOR_RANGE': r'^for (?P<name>[^\s]+) in range\((?P<start>\d+),(?:\s*)(?P<end>\d+)\):$',
-    'VAR_NUM': r'^var (?P<name>[^\s]+) (?P<operator>[\+\-\*\/|]|)= (?P<value>[+-]?(?:\d*\.)?\d+)$',
-    'VAR_STR': r'^var (?P<name>[^\s]+) (?P<operator>[\+]|)= \"(?P<value>.+)\"$',
     'VAR_DELETE': r'^var del (?P<name>[^\s]+)$',
     'VAR_LIST_SET': r'^var (?P<name>[^\s]+) = \[(?P<value>.+)\]$',
     'VAR_LIST_REMOVE': r'^(?P<name>[^\s]+).remove\((?P<value>.+)\)$',
@@ -38,6 +36,7 @@ mcpy_patterns: dict[str: str] = {
     'VAR_LIST_POP': r'(?P<name>[^\s]+).pop\((?P<value>.+|)\)',
     'VAR_LIST_COUNT': r'(?P<name>[^\s]+).count\(\)',
     'VAR_LIST_GET': r'(?P<name>[^\s]+)\[(?P<index>\d+)\]',
+    'VAR_SET': r'^var (?P<name>[^\s]+) (?P<operator>[\+\-\*\/|]|)= (?P<value>[+-]?.+)$',
 }
 snippet_patterns: dict[str: list[str]] = {
     'SCORE_RESET': [
@@ -318,8 +317,8 @@ def set_lines_type(lines: list[Line]) -> list[Line]:
             for i in mcpy_types:
                 line.add_type(i)
 
-            continuable = ['FUNCTION_DEFINE', 'FUNCTION_CALL', 'FOR_LIST', 'FOR_RANGE', 'VAR_NUM',
-                           'VAR_STR', 'VAR_DELETE', 'VAR_LIST_SET', 'VAR_LIST_REMOVE', 'VAR_LIST_APPEND', 'VAR_LIST_INSERT']
+            continuable = ['FUNCTION_DEFINE', 'FUNCTION_CALL', 'FOR_LIST', 'FOR_RANGE', 'VAR_SET',
+                           'VAR_DELETE', 'VAR_LIST_SET', 'VAR_LIST_REMOVE', 'VAR_LIST_APPEND', 'VAR_LIST_INSERT']
             if any(x in mcpy_types for x in continuable):
                 line.add_type('MCPY')
                 continue
@@ -472,32 +471,36 @@ def mcpy_for_recursion(line: Line, name: str, i) -> Line:
     return line
 
 
-def mcpy_var_num(line: Line):
-    name: str = re.sub(mcpy_patterns['VAR_NUM'], '\g<name>', line.get_text())
+def mcpy_var_set(line: Line) -> None:
+    name: str = re.sub(mcpy_patterns['VAR_SET'], '\g<name>', line.get_text())
     operator: str = re.sub(
-        mcpy_patterns['VAR_NUM'], '\g<operator>', line.get_text())
+        mcpy_patterns['VAR_SET'], '\g<operator>', line.get_text())
     value_text: str = re.sub(
-        mcpy_patterns['VAR_NUM'], '\g<value>', line.get_text())
+        mcpy_patterns['VAR_SET'], '\g<value>', line.get_text())
+
+    ldict = {}
+    exec(f"a = {value_text}", globals(), ldict)
+
+    # Auto float to int
+    if type(ldict['a']) == float and round(ldict['a']) == ldict['a']:
+        ldict['a'] = int(ldict['a'])
+
+    value_text = str(ldict['a'])
 
     if operator:
-        local_mcpy_storage[name] = eval(
-            f'{local_mcpy_storage[name]} {operator} {value_text}')
+        if type(local_mcpy_storage[name]) == str:
+            local_mcpy_storage[name] += value_text
+        else:
+            exec(f"local_mcpy_storage['{name}'] {operator}= {value_text}")
+
+            if local_mcpy_storage[name] == float and round(local_mcpy_storage[name]) == local_mcpy_storage[name]:
+                local_mcpy_storage[name] = int(local_mcpy_storage[name])
     elif value_text.isdigit():
         local_mcpy_storage[name] = int(value_text)
     elif value_text.isdecimal():
         local_mcpy_storage[name] = float(value_text)
-
-
-def mcpy_var_str(line: Line):
-    name: str = re.sub(mcpy_patterns['VAR_STR'], '\g<name>', line.get_text())
-    operator: str = re.sub(
-        mcpy_patterns['VAR_STR'], '\g<operator>', line.get_text())
-    value: int = re.sub(mcpy_patterns['VAR_STR'], '\g<value>', line.get_text())
-
-    if operator == '':
-        local_mcpy_storage[name] = value
     else:
-        local_mcpy_storage[name] += value
+        local_mcpy_storage[name] = value_text
 
 
 def mcpy_var_delete(line: Line):
@@ -511,7 +514,7 @@ def process_mcpy(lines: list[Line]) -> list[Line]:
 
     for line in lines:
         if local_mcpy_storage != {}:
-            exception: list[str] = ['VAR_NUM', 'VAR_STR', 'VAR_DELETE']
+            exception: list[str] = ['VAR_SET', 'VAR_DELETE']
             for key, value in local_mcpy_storage.items():
                 if line.get_text().find(key) and all(x not in line.get_type() for x in exception):
                     line.set_text(line.get_text().replace(key, str(value)))
@@ -523,11 +526,8 @@ def process_mcpy(lines: list[Line]) -> list[Line]:
                                   f'={new_value}', line.get_text()))
 
         if 'MCPY' in line.get_type():
-            if 'VAR_NUM' in line.get_type():
-                mcpy_var_num(line)
-                continue
-            elif 'VAR_STR' in line.get_type():
-                mcpy_var_str(line)
+            if 'VAR_SET' in line.get_type():
+                mcpy_var_set(line)
                 continue
             elif 'VAR_DELETE' in line.get_type():
                 mcpy_var_delete(line)
