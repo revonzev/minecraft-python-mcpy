@@ -469,6 +469,7 @@ def mcpy_for_recursion(line: Line, name: str, i) -> Line:
 
 
 def mcpy_var_set(line: Line) -> None:
+    global local_mcpy_storage
     name: str = re.sub(mcpy_patterns['VAR_SET'], '\g<name>', line.get_text())
     operator: str = re.sub(
         mcpy_patterns['VAR_SET'], '\g<operator>', line.get_text())
@@ -492,12 +493,16 @@ def mcpy_var_set(line: Line) -> None:
 
             if local_mcpy_storage[name] == float and round(local_mcpy_storage[name]) == local_mcpy_storage[name]:
                 local_mcpy_storage[name] = int(local_mcpy_storage[name])
+        return
     elif value_text.isdigit():
         local_mcpy_storage[name] = int(value_text)
     elif value_text.isdecimal():
         local_mcpy_storage[name] = float(value_text)
     else:
         local_mcpy_storage[name] = value_text
+
+    local_mcpy_storage = dict(
+        sorted(local_mcpy_storage.items(), reverse=True))
 
 
 def mcpy_var_delete(line: Line):
