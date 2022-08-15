@@ -2,8 +2,10 @@ from copy import deepcopy
 import json
 import os
 from queue import Empty
+import random
 import re
 import shutil
+import string
 import time
 
 
@@ -16,11 +18,12 @@ settings: dict = {
     'base': './mcpy/',
     'tab_style': '    ',
     'obfuscate': False,
+    'obfuscation_char_limit': 16,
+    'auto_obfuscate': False,
     'keep_unused_obfuscated_string': False,
     'keep_comment': False,
     'indented_comment': True,
     'keep_empty_lines': False,
-    'auto_obfuscate': False,
     'file_for_globals': True
 }
 mcpy_patterns: dict[str: str] = {
@@ -37,6 +40,7 @@ mcpy_patterns: dict[str: str] = {
     # 'VAR_LIST_COUNT': r'(?P<name>[^\s]+).count\(\)',
     # 'VAR_LIST_GET': r'(?P<name>[^\s]+)\[(?P<index>\d+)\]',
     'VAR_SET': r'^var (?P<name>[^\s]+) (?P<operator>[\+\-\*\/|]|)= (?P<value>[+-]?.+)$',
+    'OBFUSCATE': r'^obf\s(?P<value>.+)$',
 }
 snippet_patterns: dict[str: list[str]] = {
     'SCORE_RESET': [
@@ -101,6 +105,11 @@ snippet_patterns: dict[str: list[str]] = {
     ],
 }
 local_mcpy_storage: dict = {}  # name: value
+global_mcpy_storage: dict = {
+    'OBFUSCATIONS': {},
+    # 'FUNCTIONS': {},
+    # 'VARIABLES': {},
+}
 
 
 class Line():
@@ -315,7 +324,8 @@ def set_lines_type(lines: list[Line]) -> list[Line]:
                 line.add_type(i)
 
             continuable = ['FUNCTION_DEFINE', 'FUNCTION_CALL', 'FOR_LIST', 'FOR_RANGE', 'VAR_SET',
-                           'VAR_DELETE', 'VAR_LIST_SET', 'VAR_LIST_REMOVE', 'VAR_LIST_APPEND', 'VAR_LIST_INSERT']
+                           'VAR_DELETE', 'VAR_LIST_SET', 'VAR_LIST_REMOVE', 'VAR_LIST_APPEND',
+                           'VAR_LIST_INSERT', 'OBFUSCATE']
             if any(x in mcpy_types for x in continuable):
                 line.add_type('MCPY')
                 continue
@@ -411,6 +421,11 @@ def snippets_to_mcf(lines: list[Line]) -> list[Line]:
     for line in lines:
         snippet_key = which_snippet(line.get_text())
         if snippet_key != '':
+            if snippet_key == 'SCORE_DEFINE' and settings['auto_obfuscate']:
+                name: str = re.sub(
+                    snippet_patterns['SCORE_DEFINE'][0], r'\g<name>', line.get_text())
+                mcpy_new_obfuscation(to_obfuscate=name)
+
             line.set_text(re.sub(
                 snippet_patterns[snippet_key][0], snippet_patterns[snippet_key][1], line.get_text()))
 
@@ -511,6 +526,34 @@ def mcpy_var_delete(line: Line):
     local_mcpy_storage.pop(name)
 
 
+def mcpy_new_obfuscation(line: Line = None, to_obfuscate: str = '') -> None:
+    if not settings['obfuscate']:
+        return
+
+    if not to_obfuscate:
+        to_obfuscate: str = re.sub(
+            mcpy_patterns['OBFUSCATE'], r'\g<value>', line.get_text())
+    obfuscation: str = ''
+    saved_obfuscations: dict = {}
+
+    if os.path.isfile('./obfuscated_data.json'):
+        with open('./obfuscated_data.json', 'r', encoding='utf-8') as f:
+            saved_obfuscations = json.load(f)
+
+    if to_obfuscate in saved_obfuscations.keys():
+        obfuscation = saved_obfuscations[to_obfuscate]
+    else:
+        obfuscation = ''.join(random.SystemRandom().choice(
+            string.ascii_letters + string.digits) for _ in range(settings['obfuscation_char_limit']))
+
+    if obfuscation in global_mcpy_storage['OBFUSCATIONS'].keys():
+        mcpy_new_obfuscation(to_obfuscate=to_obfuscate)
+
+    global_mcpy_storage['OBFUSCATIONS'][to_obfuscate] = obfuscation
+    global_mcpy_storage['OBFUSCATIONS'] = dict(sorted(
+        global_mcpy_storage['OBFUSCATIONS'].items(), key=lambda item: (-len(item[0]), item[0])))
+
+
 def process_mcpy(lines: list[Line]) -> list[Line]:
     reprocess: bool = False
 
@@ -528,6 +571,9 @@ def process_mcpy(lines: list[Line]) -> list[Line]:
                                   f'={new_value}', line.get_text()))
 
         if 'MCPY' in line.get_type():
+            if 'OBFUSCATE' in line.get_type():
+                mcpy_new_obfuscation(line)
+                continue
             if 'VAR_SET' in line.get_type():
                 mcpy_var_set(line)
                 continue
@@ -556,6 +602,12 @@ def process_mcpy(lines: list[Line]) -> list[Line]:
     return lines
 
 
+def obfuscate(text: str):
+    for key, value in global_mcpy_storage['OBFUSCATIONS'].items():
+        text = text.replace(key, value)
+    return text
+
+
 def compile(file_path: str) -> None:
     local_mcpy_storage = {}
 
@@ -570,6 +622,7 @@ def compile(file_path: str) -> None:
     # print_lines_tree(lines)
 
     text: str = lines_to_text(lines)
+    text = obfuscate(text)
     text = re.sub('\n$', '', text)
 
     write_output_files(text, file_path)
@@ -604,6 +657,13 @@ if __name__ == '__main__':
 
         if has_files_modified():
             delete_dist()
+            if not settings['keep_unused_obfuscated_string']:
+                global_mcpy_storage['OBFUSCATIONS'] = {}
 
             for file_path in mcpy_file_paths:
                 compile(file_path)
+
+            if settings['obfuscate']:
+                with open('./obfuscated_data.json', 'w', encoding='utf-8') as f:
+                    json.dump(
+                        global_mcpy_storage['OBFUSCATIONS'], f, ensure_ascii=False, indent=4)
