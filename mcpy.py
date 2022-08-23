@@ -104,7 +104,10 @@ snippet_patterns: dict[str: list[str]] = {
         r'scoreboard players operation @s \g<objective1> \g<operation> @s \g<objective2>',
     ],
 }
-local_mcpy_storage: dict = {}  # name: value
+local_mcpy_storage: dict = {
+    # 'FUNCTIONS': {},
+    'VARIABLES': {},
+}
 global_mcpy_storage: dict = {
     'OBFUSCATIONS': {},
     # 'FUNCTIONS': {},
@@ -501,20 +504,20 @@ def mcpy_var_set(line: Line) -> None:
     value_text = str(ldict['a'])
 
     if operator:
-        if type(local_mcpy_storage[name]) == str:
-            local_mcpy_storage[name] += value_text
+        if type(local_mcpy_storage['VARIABLES'][name]) == str:
+            local_mcpy_storage['VARIABLES'][name] += value_text
         else:
             exec(f"local_mcpy_storage['{name}'] {operator}= {value_text}")
 
-            if local_mcpy_storage[name] == float and round(local_mcpy_storage[name]) == local_mcpy_storage[name]:
-                local_mcpy_storage[name] = int(local_mcpy_storage[name])
+            if local_mcpy_storage['VARIABLES'][name] == float and round(local_mcpy_storage['VARIABLES'][name]) == local_mcpy_storage['VARIABLES'][name]:
+                local_mcpy_storage['VARIABLES'][name] = int(local_mcpy_storage['VARIABLES'][name])
         return
     elif value_text.isdigit():
-        local_mcpy_storage[name] = int(value_text)
+        local_mcpy_storage['VARIABLES'][name] = int(value_text)
     elif value_text.isdecimal():
-        local_mcpy_storage[name] = float(value_text)
+        local_mcpy_storage['VARIABLES'][name] = float(value_text)
     else:
-        local_mcpy_storage[name] = value_text
+        local_mcpy_storage['VARIABLES'][name] = value_text
 
     local_mcpy_storage = dict(
         sorted(local_mcpy_storage.items(), reverse=True))
